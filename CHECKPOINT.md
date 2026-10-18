@@ -82,6 +82,14 @@ Done (written, typechecks; not yet browser-tested):
   pause/resume/end/edit, create rivalry, storyline suggestions (contenders, turns, team splits).
 - `/finances`: ledger-driven KPIs, revenue vs expenses chart, cash + forecast chart, by-category, by-brand, transactions.
 - `/calendar`: 8-week schedule, PLEs, booked title matches, contract expiries, injury returns.
+### Extra (requested): muscular models + 3D character studio ✅
+- `src/components/match3d/anatomy.ts` — sculpted-tube geometry with Gaussian muscle bumps, supersampled vertex paint, cavity shading.
+- `src/components/match3d/body.ts` — builds every body part from `appearance` (muscle, definition, bodyFat, bulk,
+  shoulderWidth, armSize, legSize, gear, kneepads, wrist tape, face/beard/brows/mask paint, hair shells).
+- `WrestlerModel.tsx` rebuilt on the sculpted body; rig gained arm-twist channels; poses: flex, lat-spread, most-muscular.
+- `/roster/[id]/look` character studio (orbit, presets, turntable, poses, body/face/gear tabs, original-look reset).
+- Save schema v2 + migration (`src/engine/schema.ts`), default physiques in `src/engine/appearance.ts`. Tests: 14 passing.
+
 ### Phase 4 — Playable 3D match ⏳
 ### Phase 5–6 — Polish, tests, deploy ⏳
 

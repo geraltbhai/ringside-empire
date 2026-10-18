@@ -76,7 +76,7 @@ export function buildBody(a: Appearance, division: Division): BodyGeometry {
   const torsoTop = 0.56;
   const armR = (0.04 + m * 0.021 + b * 0.01 + f * 0.006) * armK - (W ? 0.004 : 0);
   const legR = (0.068 + m * 0.026 + b * 0.02 + f * 0.016) * legK;
-  const deltR = 0.052 + m * 0.036 + sw * 0.012 + b * 0.008 - (W ? 0.008 : 0);
+  const deltR = 0.05 + m * 0.03 + sw * 0.01 + b * 0.008 - (W ? 0.008 : 0);
   const dims: BodyDims = {
     hipY: 0.95,
     torsoTop,
@@ -377,10 +377,12 @@ export function buildBody(a: Appearance, division: Division): BodyGeometry {
   const arm = (s: 1 | -1) => {
     const side = (s * PI) / 2;
     const deltRx = curve([
-      [0, 0.012],
-      [0.25, deltR],
-      [0.6, deltR * 0.86],
-      [1, armR * 0.62],
+      [0, 0.004],
+      [0.14, deltR * 0.72],
+      [0.34, deltR],
+      [0.58, deltR * 0.9],
+      [0.82, armR * 0.98],
+      [1, armR * 0.6],
     ]);
     const delt = sculptTube({
       y0: 0.075,
