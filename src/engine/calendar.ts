@@ -97,3 +97,8 @@ export function upcomingEvents(universe: Universe, weeks = 8) {
   }
   return events.sort((a, b) => a.week - b.week || a.dayOffset - b.dayOffset);
 }
+
+/** Human label for a week number; negative weeks are history from before the universe began. */
+export function weekLabel(week: number) {
+  return week < 0 ? `${-week} wk before start` : `Week ${week + 1}`;
+}

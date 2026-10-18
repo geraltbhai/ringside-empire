@@ -59,10 +59,20 @@ from CHECKPOINT.md", and it will pick up at **Next up** below.
 - Main menu (live 3D arena backdrop), New Universe, Dashboard.
 - Engine modules for Phases 2–4 are written and balance-tested headlessly.
 
-### Phase 2 — Management core ⏳ next
-### Phase 3 — Booking & simulation ⏳
+### Phase 2 — Management core ✅
+- Roster: search, 5 filters, sortable columns, mobile layout.
+- Wrestler profile: 5 separate ratings, grouped attributes, "why this overall" weights, moveset, status, title history, rivalries, recent matches.
+- Rating editor: every attribute with live overall recalculation, manual overall override, popularity/potential/morale, brand transfer, salary,
+  finisher/signatures, tag-team form/disband, appearance (drives portrait + 3D model), portrait upload, restore defaults.
+- Create custom wrestler; create alternate (era) versions without touching the original.
+- Brands: stats, ratings chart, titles, roster, transfer / trade / balanced snake draft, cross-brand toggle.
+- Championships: holders, prestige, lineage, vacate, award.
+- Contracts: sign / renew / release with live interest preview, counter-offers, severance, auto-renew toggle.
+- Unit tests: rating model (8), save system (3).
+
+### Phase 3 — Booking & simulation ⏳ next
 ### Phase 4 — Playable 3D match ⏳
 ### Phase 5–6 — Polish, tests, deploy ⏳
 
 ## Next up
-Roster list/profile/editor screens, brands, championships, contracts.
+Booking screen (card builder + validation + AI Booker), show results, rivalries, finances, calendar, history, settings.

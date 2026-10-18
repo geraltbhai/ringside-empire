@@ -656,3 +656,48 @@ export function startUniverse(options: NewUniverseOptions): Universe {
   return universe;
 }
 
+
+/**
+ * Balanced brand draft: champions stay put, tag teams are drafted as a unit,
+ * and the two brands pick alternately (snake order) by a star-value score.
+ */
+export function runDraft(universe: Universe) {
+  const champs = new Set(Object.values(universe.championships).flatMap((c) => c.holderIds));
+  const units: { ids: string[]; value: number }[] = [];
+  const seen = new Set<string>();
+  for (const w of Object.values(universe.wrestlers)) {
+    if ((w.brand !== "mayhem" && w.brand !== "fury") || seen.has(w.id)) continue;
+    const team = w.teamId ? universe.teams[w.teamId] : null;
+    const ids = team ? [...team.memberIds] : [w.id];
+    ids.forEach((id) => seen.add(id));
+    if (ids.some((id) => champs.has(id))) continue;
+    const value = ids.reduce((s, id) => s + overall(universe.wrestlers[id], universe.settings) * 0.6 + universe.wrestlers[id].popularity * 0.4, 0) / ids.length;
+    units.push({ ids, value });
+  }
+  units.sort((a, b) => b.value - a.value);
+  const order: ("mayhem" | "fury")[] = [];
+  const first = universe.brands.mayhem.popularity <= universe.brands.fury.popularity ? "mayhem" : "fury";
+  const second = first === "mayhem" ? "fury" : "mayhem";
+  units.forEach((_, i) => order.push(Math.floor(i / 2) % 2 === 0 ? (i % 2 === 0 ? first : second) : i % 2 === 0 ? second : first));
+  let moved = 0;
+  units.forEach((unit, i) => {
+    const to = order[i];
+    for (const id of unit.ids) {
+      if (universe.wrestlers[id].brand !== to) moved++;
+      universe.wrestlers[id].brand = to;
+    }
+    const team = Object.values(universe.teams).find((t) => t.memberIds.every((m) => unit.ids.includes(m)));
+    if (team) team.brand = to;
+  });
+  // Rivalries that now span two brands are paused.
+  for (const r of Object.values(universe.rivalries)) {
+    if (r.status !== "active") continue;
+    const brands = new Set([...r.sideA, ...r.sideB].map((id) => universe.wrestlers[id].brand));
+    if (brands.size > 1) {
+      r.status = "paused";
+      r.events.push({ week: universe.week, text: "The draft split these rivals onto different brands." });
+    } else r.brand = [...brands][0];
+  }
+  universe.news.push({ week: universe.week, text: `The brand draft moved ${moved} wrestlers. ${universe.brands[first].showName} had the first pick.`, tone: "neutral" });
+  return moved;
+}

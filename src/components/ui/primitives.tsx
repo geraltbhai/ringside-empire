@@ -160,7 +160,7 @@ export function Modal({ open, onClose, title, children, wide }: { open: boolean;
         role="dialog"
         aria-modal="true"
         aria-labelledby={id}
-        className={cn("max-h-[92dvh] w-full overflow-y-auto rounded-t-xl border border-rope bg-canvas p-5 shadow-2xl sm:rounded-xl", wide ? "sm:max-w-3xl" : "sm:max-w-lg")}
+        className={cn("max-h-[92dvh] w-full overflow-y-auto outline-none rounded-t-xl border border-rope bg-canvas p-5 shadow-2xl sm:rounded-xl", wide ? "sm:max-w-3xl" : "sm:max-w-lg")}
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 id={id} className="font-display text-2xl">
