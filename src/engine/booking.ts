@@ -173,7 +173,8 @@ export function recommendCard(universe: Universe, show: Show): Suggestion[] {
       const last = lastMeeting(universe, r.sideA, r.sideB);
       return last != null && universe.week - last.week <= 1;
     })();
-    if (show.type === "weekly" && (r.stage <= 1 || metLastWeek)) {
+    const talkUsed = out.filter((x) => x.segment.kind !== "match").length;
+    if (show.type === "weekly" && (r.stage <= 1 || metLastWeek) && talkUsed < 2) {
       push(
         newSegment(universe, "rivalry", { label: "Rivalry confrontation", sideA: [...r.sideA], sideB: [...r.sideB], rivalryId: r.id, durationMin: 6 }),
         [`Builds the ${sideName(universe, r.sideA)} vs ${sideName(universe, r.sideB)} story (stage ${r.stage + 1}/5).`, `Rivalry intensity ${Math.round(r.intensity)} — a confrontation escalates it without spending the big match.`],

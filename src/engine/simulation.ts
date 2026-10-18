@@ -144,6 +144,8 @@ export function expectedQualityBreakdown(universe: Universe, show: Show, seg: Se
     const last = lastMeeting(universe, sides[0], sides[1]);
     if (last && universe.week - last.week <= 1) repetition -= 8;
     else if (last && universe.week - last.week <= 3) repetition -= 4;
+    // Rematches are the backbone of a feud: fans tolerate them, just not every single week.
+    if (rivalry && rivalry.status === "active") repetition *= 0.5;
   }
   const overworked = members.filter((w) => matchesInLastWeeks(w, universe.week) >= universe.settings.maxMatchesPerMonth).length;
   const fatiguePenalty = -overworked * 4 - avg((w) => Math.max(0, w.fatigue - 60) * 0.15);
@@ -173,7 +175,10 @@ export function combineQuality(b: ReturnType<typeof expectedQualityBreakdown>) {
   );
 }
 
-export const qualityToStars = (quality: number) => clamp(Math.round(((quality - 40) / 11.5) * 4) / 4, 0.25, 5);
+/** Diminishing returns above 85 so 100/100 needs everything to go right. */
+export const softCap = (q: number) => (q > 85 ? 85 + (q - 85) * 0.5 : q);
+
+export const qualityToStars = (quality: number) => clamp(Math.round(((quality - 35) / 12) * 4) / 4, 0.25, 5);
 
 function injuryRoll(universe: Universe, seg: Segment, rng: Rng): SegmentResult["injuries"] {
   const ids = [...seg.sideA, ...seg.sideB, ...seg.sideC];
@@ -304,7 +309,7 @@ export function simulateSegment({ universe, show, rng }: SimulationContext, seg:
     draw: "Double count-out",
   }[finishKind];
 
-  quality = clamp(Math.round(quality), 5, 100);
+  quality = clamp(Math.round(softCap(quality)), 5, 100);
 
   const nameA = sideName(universe, sides[0]);
   const nameB = sideName(universe, sides[1] ?? []);
@@ -388,8 +393,9 @@ function simulateTalkSegment({ universe, rng }: SimulationContext, seg: Segment)
     popularity: Math.round(pop),
     rivalry: rivalry ? Math.round(rivalry.intensity) : 0,
   };
+  // Talk segments top out around four stars for elite talkers in hot rivalries; matches carry shows.
   const quality = clamp(
-    Math.round(ent * 0.62 + pop * 0.23 + (rivalry ? rivalry.intensity * 0.15 + 4 : 6) + (seg.kind === "rivalry" ? 3 : 0) + rng.normal(0, 4)),
+    Math.round(softCap(ent * 0.5 + pop * 0.16 + (rivalry ? rivalry.intensity * 0.12 : 0) + (seg.kind === "rivalry" ? 4 : 2) + Math.min(0, 8 - seg.durationMin) + rng.normal(0, 4))),
     5,
     100,
   );

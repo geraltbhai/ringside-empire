@@ -19,7 +19,8 @@ const DIFFICULTIES: { value: Settings["difficulty"]; label: string; text: string
 function nextMonday() {
   const d = new Date();
   d.setDate(d.getDate() + ((8 - d.getDay()) % 7 || 7));
-  return d.toISOString().slice(0, 10);
+  // Local calendar date (toISOString would shift it by the UTC offset).
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 export default function NewUniversePage() {

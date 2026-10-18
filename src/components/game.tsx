@@ -144,12 +144,12 @@ export function MatchupCard({
                 lost && "opacity-45 grayscale",
               )}
             >
-              <div className={cn("absolute bottom-0 flex h-full", i === 1 && valid.length === 2 ? "right-2" : "left-2")}>
+              <div className={cn("absolute bottom-0 flex h-full", valid.length !== 2 ? "left-1/2 -translate-x-1/2" : i === 0 ? "right-8 sm:right-10" : "left-8 sm:left-10")}>
                 {ids.map((id) => (
-                  <Portrait key={id} w={universe.wrestlers[id]} className="h-full w-auto" rounded="rounded-none" />
+                  <Portrait key={id} w={universe.wrestlers[id]} className="h-full w-auto drop-shadow-[0_0_12px_rgba(0,0,0,0.6)]" rounded="rounded-none" />
                 ))}
               </div>
-              <div className={cn("relative z-10 w-full bg-gradient-to-t from-black/85 to-transparent p-2 pt-8", i === 1 && valid.length === 2 && "text-right")}>
+              <div className={cn("relative z-10 w-full bg-gradient-to-t from-black/90 via-black/40 to-transparent p-2 pt-10", i === 1 && valid.length === 2 && "text-right", valid.length !== 2 && "text-center")}>
                 <div className="font-display text-lg leading-none sm:text-xl">{sideName(universe, ids)}</div>
                 {won && <div className="mt-1 text-xs font-bold text-gold-light">WINNER</div>}
               </div>

@@ -27,7 +27,8 @@ export function formatGameDate(startDate: string, week: number, dayOffset = 0) {
 }
 
 function defaultVenueFor(universe: Universe, type: Show["type"], week: number, brand: BrandId | "joint") {
-  const arenas = universe.venues.filter((v) => v.tier === "arena");
+  // Default weekly venues are the big arenas; clubs and small halls are a deliberate booking choice.
+  const arenas = universe.venues.filter((v) => v.tier === "arena" && v.capacity >= 15_000);
   const stadiums = universe.venues.filter((v) => v.tier === "stadium");
   if (type === "ple") {
     const big = Math.floor(week / 4) % 3 === 2;

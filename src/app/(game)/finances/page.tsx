@@ -8,7 +8,7 @@ import type { TransactionCategory } from "@/engine/types";
 import { cn, money } from "@/lib/cn";
 import { useUniverse } from "@/store/game";
 
-const tooltip = { contentStyle: { background: "#12151d", border: "1px solid #262c39", borderRadius: 6 }, formatter: (v: unknown) => money(Number(v)) };
+const tooltip = { contentStyle: { background: "#12151d", border: "1px solid #262c39", borderRadius: 6 }, formatter: (v: unknown) => money(Number(v)), cursor: { fill: "rgba(255,255,255,0.04)", stroke: "#3a4256" } };
 const axis = { stroke: "#8b93a7", fontSize: 11 };
 
 export default function FinancesPage() {
@@ -27,7 +27,12 @@ export default function FinancesPage() {
   }, [u.transactions]);
 
   const chartWeeks = ledger.map((r) => ({ week: `W${r.week + 1}`, Revenue: r.revenue, Expenses: r.expenses, Profit: r.profit, Cash: r.cash }));
-  const forecastData = [{ week: `W${u.week + 1}`, Cash: u.cash }, ...fc.points.map((p) => ({ week: `W${p.week + 1}`, Cash: p.cash }))];
+  // Actual end-of-week cash, then a dashed forecast that starts from today's balance.
+  const cashSeries: { week: string; Cash?: number; Forecast?: number }[] = [
+    ...chartWeeks.map((c) => ({ week: c.week, Cash: c.Cash })),
+    { week: `Now`, Cash: u.cash, Forecast: u.cash },
+    ...fc.points.map((p) => ({ week: `W${p.week + 1}`, Forecast: p.cash })),
+  ];
   const txs = [...u.transactions].reverse().filter((t) => cat === "all" || t.category === cat).slice(0, 60);
 
   return (
@@ -74,14 +79,14 @@ export default function FinancesPage() {
             <Panel title="Cash balance & forecast">
               <div className="h-64">
                 <ResponsiveContainer>
-                  <LineChart data={[...chartWeeks.map((c) => ({ week: c.week, Cash: c.Cash })), ...forecastData.slice(1).map((f) => ({ week: f.week, Forecast: f.Cash }))]} margin={{ left: 10, right: 8, top: 8 }}>
+                  <LineChart data={cashSeries} margin={{ left: 10, right: 8, top: 8 }}>
                     <CartesianGrid stroke="#262c39" vertical={false} />
                     <XAxis dataKey="week" {...axis} />
                     <YAxis {...axis} tickFormatter={(v) => money(v)} />
                     <Tooltip {...tooltip} />
                     <Legend />
-                    <Line dataKey="Cash" stroke="#d9a520" strokeWidth={2} dot={false} />
-                    <Line dataKey="Forecast" stroke="#d9a520" strokeDasharray="5 4" strokeWidth={2} dot={false} />
+                    <Line dataKey="Cash" stroke="#d9a520" strokeWidth={2} dot={cashSeries.length <= 6} connectNulls />
+                    <Line dataKey="Forecast" stroke="#8b93a7" strokeDasharray="5 4" strokeWidth={2} dot={false} connectNulls />
                   </LineChart>
                 </ResponsiveContainer>
               </div>

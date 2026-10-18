@@ -82,6 +82,15 @@ Done (written, typechecks; not yet browser-tested):
   pause/resume/end/edit, create rivalry, storyline suggestions (contenders, turns, team splits).
 - `/finances`: ledger-driven KPIs, revenue vs expenses chart, cash + forecast chart, by-category, by-brand, transactions.
 - `/calendar`: 8-week schedule, PLEs, booked title matches, contract expiries, injury returns.
+- `/history`: search, source / rating / title filters, sort by best, paging.
+- `/settings`: difficulty, match length, booking rules, key remapping (swap on clash), rating-weight overrides per style,
+  save slots / export / import / typed-confirm reset, optional Supabase cloud saves, credits.
+- Supabase: `src/lib/cloud.ts`, `supabase/migrations/0001_universe_saves.sql` (RLS), `.env.example`.
+- All Phase 3 screens browser-tested once; fixes applied after that pass: AI Booker max 2 talk segments per weekly show,
+  talk-segment quality lowered + "too much talking" penalty, match quality soft cap above 85 + re-anchored star scale,
+  rivalry rematch penalty halved, audience-demand mean reversion, default weekly venues ≥15k seats, 4 weeks of shows
+  open for booking, local-date fix for the start date, finance chart cursor/forecast fixes, match-up card layout.
+  24-week headless season after fixes: avg 3.3★, max 4.5★, demand stable ~60, cash 5M → 18M with good booking.
 ### Extra (requested): muscular models + 3D character studio ✅
 - `src/components/match3d/anatomy.ts` — sculpted-tube geometry with Gaussian muscle bumps, supersampled vertex paint, cavity shading.
 - `src/components/match3d/body.ts` — builds every body part from `appearance` (muscle, definition, bodyFat, bulk,
@@ -94,10 +103,10 @@ Done (written, typechecks; not yet browser-tested):
 ### Phase 5–6 — Polish, tests, deploy ⏳
 
 ## Next up (resume here)
-1. Write `/history` (match history with filters) and `/settings` (controls remap, difficulty, match time,
-   rating-weight overrides, save slots / export / import / reset, optional Supabase cloud save, asset credits).
-2. Browser-test every Phase 3 screen (dev server + screenshots), fix issues.
-3. Unit tests: match simulator, booking validation, finance calculations.
+1. Re-screenshot booking results (match-up card layout), finances (charts) and settings after the last fixes.
+2. Unit tests: match simulator (probabilistic upsets, title changes only on decisive finishes), booking validation
+   (double-booking, injured, wrong brand, title rules), finance calculations, a full simulated week (records,
+   popularity, rivalries progress, transactions update cash).
 4. Checkpoint, then Phase 4: playable match page `/match` — the engine (`src/engine/live-match.ts`),
    poses and wrestler model are already written; needs the R3F match scene, HUD, controls, AI, results
    wiring (`recordExhibition` / `segment.playedResult`).

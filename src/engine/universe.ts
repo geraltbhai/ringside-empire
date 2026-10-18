@@ -206,11 +206,17 @@ export function runShow(universe: Universe, showId: string): ShowResult {
     rating -= (minSegments - show.segments.length) * 4;
     notes.push(`A thin card (${show.segments.length} segments) disappointed fans.`);
   }
+  const talk = show.segments.filter((s) => s.kind !== "match").length;
+  const matchCount = show.segments.length - talk;
+  if (talk > matchCount) {
+    rating -= (talk - matchCount) * 3;
+    notes.push(`Too much talking: ${talk} talk segments and only ${matchCount} match${matchCount === 1 ? "" : "es"}.`);
+  }
   if (show.type === "ple" && !show.segments.some((s) => s.titleId)) {
     rating -= 6;
     notes.push("No championship was on the line at a premium live event.");
   }
-  const repeats = matchResults.filter((r) => (r.qualityBreakdown.repetition ?? 0) < 0).length;
+  const repeats = matchResults.filter((r) => (r.qualityBreakdown.repetition ?? 0) <= -4).length;
   if (repeats) notes.push(`${repeats} rematch${repeats > 1 ? "es" : ""} felt repetitive.`);
   if (mainEventQuality < 55 && mainSeg) notes.push("The main event fell flat.");
   if (mainEventQuality >= 85) notes.push("The main event was a classic.");
@@ -381,10 +387,15 @@ export function advanceWeek(universe: Universe) {
   // Age a year every 52 weeks.
   if (universe.week > 0 && universe.week % 52 === 51) for (const w of Object.values(universe.wrestlers)) w.age += 1;
 
+  // Audience demand drifts back toward what the brands' popularity can sustain.
+  const sustainable = 40 + (universe.brands.mayhem.popularity + universe.brands.fury.popularity) * 0.2;
+  universe.audienceDemand = clamp(universe.audienceDemand + (sustainable - universe.audienceDemand) * 0.05, 20, 95);
+
   decayRivalries(universe);
   universe.week += 1;
   ensureWeekShows(universe, universe.week);
-  ensureWeekShows(universe, universe.week + 1);
+  // Keep four weeks of cards open so the next premium live event can be booked ahead.
+  for (let w = universe.week + 1; w <= universe.week + 3; w++) ensureWeekShows(universe, w);
   universe.updatedAt = new Date().toISOString();
   // Keep news bounded
   if (universe.news.length > 300) universe.news = universe.news.slice(-300);
@@ -659,6 +670,8 @@ export function startUniverse(options: NewUniverseOptions): Universe {
   const universe = createUniverse(options);
   ensureWeekShows(universe, 0);
   ensureWeekShows(universe, 1);
+  ensureWeekShows(universe, 2);
+  ensureWeekShows(universe, 3);
   return universe;
 }
 

@@ -57,7 +57,7 @@ export default function BrandsPage() {
                       <CartesianGrid stroke="#262c39" vertical={false} />
                       <XAxis dataKey="week" stroke="#8b93a7" fontSize={11} />
                       <YAxis stroke="#8b93a7" fontSize={11} domain={[0, 100]} />
-                      <Tooltip contentStyle={{ background: "#12151d", border: "1px solid #262c39" }} />
+                      <Tooltip contentStyle={{ background: "#12151d", border: "1px solid #262c39" }} cursor={{ stroke: "#3a4256" }} />
                       <Line type="monotone" dataKey="rating" name="Show rating" stroke={b.color} strokeWidth={2} dot={false} />
                     </LineChart>
                   </ResponsiveContainer>
