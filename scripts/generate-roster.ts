@@ -80,7 +80,7 @@ function appearance(def: WrestlerDef): Appearance {
   const bulkFromWeight = Math.max(0, Math.min(1, (def.w - (def.division === "women" ? 110 : 170)) / 200));
   return {
     skinTone: SKIN[h % SKIN.length],
-    hairColor: HAIR[(h >> 3) % HAIR.length],
+    hairColor: HAIR[(h >>> 3) % HAIR.length],
     hairStyle: "short",
     facialHair: "none",
     primaryColor: "#334155",
@@ -132,8 +132,8 @@ const wrestlers: Wrestler[] = WRESTLER_DEFS.map((def) => {
     popularity: def.pop,
     potential: Math.max(def.pot, formulaOverall(attributes, def.style)),
     morale: 62 + (h % 25),
-    momentum: 45 + ((h >> 5) % 30),
-    fatigue: (h >> 9) % 15,
+    momentum: 45 + ((h >>> 5) % 30),
+    fatigue: (h >>> 9) % 15,
     injury: null,
     finisher: def.finisher,
     signatures: def.sigs,
@@ -142,7 +142,7 @@ const wrestlers: Wrestler[] = WRESTLER_DEFS.map((def) => {
     contract: {
       status: legend ? "legend-deal" : free ? "free-agent" : "signed",
       weeklySalary: salaryFor(def.ovr, def.pop, legend),
-      weeksRemaining: legend || free ? 0 : 8 + ((h >> 11) % 90),
+      weeksRemaining: legend || free ? 0 : 8 + ((h >>> 11) % 90),
       signedWeek: 0,
     },
     teamId: def.team ?? null,

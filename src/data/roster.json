@@ -43,8 +43,8 @@
    "popularity": 92,
    "potential": 93,
    "morale": 71,
-   "momentum": 44,
-   "fatigue": -4,
+   "momentum": 52,
+   "fatigue": 4,
    "injury": null,
    "finisher": "Final Verdict",
    "signatures": [
@@ -61,13 +61,14 @@
    "contract": {
     "status": "signed",
     "weeklySalary": 22000,
-    "weeksRemaining": -27,
+    "weeksRemaining": 35,
     "signedWeek": 0
    },
    "teamId": null,
    "allies": [],
    "appearance": {
     "skinTone": "#e8b48f",
+    "hairColor": "#d6d3d1",
     "hairStyle": "short",
     "facialHair": "stubble",
     "primaryColor": "#1d4ed8",
@@ -285,8 +286,8 @@
    "popularity": 81,
    "potential": 90,
    "morale": 74,
-   "momentum": 41,
-   "fatigue": -3,
+   "momentum": 49,
+   "fatigue": 5,
    "injury": null,
    "finisher": "Riptide",
    "signatures": [
@@ -303,13 +304,14 @@
    "contract": {
     "status": "signed",
     "weeklySalary": 14700,
-    "weeksRemaining": -46,
+    "weeksRemaining": 16,
     "signedWeek": 0
    },
    "teamId": null,
    "allies": [],
    "appearance": {
     "skinTone": "#a86b45",
+    "hairColor": "#1c1917",
     "hairStyle": "long",
     "facialHair": "goatee",
     "primaryColor": "#0e7490",
@@ -446,8 +448,8 @@
    "popularity": 80,
    "potential": 89,
    "morale": 83,
-   "momentum": 32,
-   "fatigue": -13,
+   "momentum": 70,
+   "fatigue": 10,
    "injury": null,
    "finisher": "Sol Invictus",
    "signatures": [
@@ -464,13 +466,14 @@
    "contract": {
     "status": "signed",
     "weeklySalary": 13000,
-    "weeksRemaining": -7,
+    "weeksRemaining": 55,
     "signedWeek": 0
    },
    "teamId": null,
    "allies": [],
    "appearance": {
     "skinTone": "#a86b45",
+    "hairColor": "#3f2a1d",
     "hairStyle": "short",
     "facialHair": "none",
     "primaryColor": "#f59e0b",
@@ -688,8 +691,8 @@
    "popularity": 73,
    "potential": 85,
    "morale": 73,
-   "momentum": 24,
-   "fatigue": -2,
+   "momentum": 62,
+   "fatigue": 6,
    "injury": null,
    "finisher": "Steel Toe",
    "signatures": [
@@ -706,13 +709,14 @@
    "contract": {
     "status": "signed",
     "weeklySalary": 9900,
-    "weeksRemaining": 0,
+    "weeksRemaining": 62,
     "signedWeek": 0
    },
    "teamId": null,
    "allies": [],
    "appearance": {
     "skinTone": "#7d4a2d",
+    "hairColor": "#a16207",
     "hairStyle": "ponytail",
     "facialHair": "stubble",
     "primaryColor": "#334155",
@@ -768,8 +772,8 @@
    "popularity": 76,
    "potential": 82,
    "morale": 73,
-   "momentum": 20,
-   "fatigue": -13,
+   "momentum": 58,
+   "fatigue": 10,
    "injury": null,
    "finisher": "Ferrante Flip",
    "signatures": [
@@ -786,13 +790,14 @@
    "contract": {
     "status": "signed",
     "weeklySalary": 8200,
-    "weeksRemaining": -59,
+    "weeksRemaining": 93,
     "signedWeek": 0
    },
    "teamId": null,
    "allies": [],
    "appearance": {
     "skinTone": "#7d4a2d",
+    "hairColor": "#1c1917",
     "hairStyle": "short",
     "facialHair": "none",
     "primaryColor": "#be185d",
@@ -1010,8 +1015,8 @@
    "popularity": 75,
    "potential": 86,
    "morale": 77,
-   "momentum": 44,
-   "fatigue": -2,
+   "momentum": 52,
+   "fatigue": 6,
    "injury": null,
    "finisher": "Skyfall",
    "signatures": [
@@ -1028,13 +1033,14 @@
    "contract": {
     "status": "signed",
     "weeklySalary": 8700,
-    "weeksRemaining": -42,
+    "weeksRemaining": 20,
     "signedWeek": 0
    },
    "teamId": "sky-high",
    "allies": [],
    "appearance": {
     "skinTone": "#5a341f",
+    "hairColor": "#1c1917",
     "hairStyle": "buzz",
     "facialHair": "none",
     "primaryColor": "#0284c7",
@@ -1171,8 +1177,8 @@
    "popularity": 70,
    "potential": 80,
    "morale": 78,
-   "momentum": 34,
-   "fatigue": -1,
+   "momentum": 72,
+   "fatigue": 7,
    "injury": null,
    "finisher": "Neon Lights",
    "signatures": [
@@ -1189,13 +1195,14 @@
    "contract": {
     "status": "signed",
     "weeklySalary": 7000,
-    "weeksRemaining": 0,
+    "weeksRemaining": 62,
     "signedWeek": 0
    },
    "teamId": "neon-express",
    "allies": [],
    "appearance": {
     "skinTone": "#a86b45",
+    "hairColor": "#a16207",
     "hairStyle": "mohawk",
     "facialHair": "none",
     "primaryColor": "#c026d3",
@@ -1656,8 +1663,8 @@
    "popularity": 77,
    "potential": 88,
    "morale": 69,
-   "momentum": 31,
-   "fatigue": -5,
+   "momentum": 69,
+   "fatigue": 3,
    "injury": null,
    "finisher": "Kunai Kick",
    "signatures": [
@@ -1674,13 +1681,14 @@
    "contract": {
     "status": "signed",
     "weeklySalary": 11400,
-    "weeksRemaining": -31,
+    "weeksRemaining": 31,
     "signedWeek": 0
    },
    "teamId": null,
    "allies": [],
    "appearance": {
     "skinTone": "#f5d0b5",
+    "hairColor": "#a16207",
     "hairStyle": "short",
     "facialHair": "none",
     "primaryColor": "#15803d",
@@ -1898,8 +1906,8 @@
    "popularity": 91,
    "potential": 93,
    "morale": 66,
-   "momentum": 17,
-   "fatigue": -2,
+   "momentum": 55,
+   "fatigue": 6,
    "injury": null,
    "finisher": "Coronation",
    "signatures": [
@@ -1916,13 +1924,14 @@
    "contract": {
     "status": "signed",
     "weeklySalary": 24300,
-    "weeksRemaining": -19,
+    "weeksRemaining": 43,
     "signedWeek": 0
    },
    "teamId": null,
    "allies": [],
    "appearance": {
     "skinTone": "#5a341f",
+    "hairColor": "#7f1d1d",
     "hairStyle": "long",
     "facialHair": "beard",
     "primaryColor": "#0f172a",
@@ -2140,8 +2149,8 @@
    "popularity": 83,
    "potential": 93,
    "morale": 63,
-   "momentum": 26,
-   "fatigue": -13,
+   "momentum": 64,
+   "fatigue": 10,
    "injury": null,
    "finisher": "Kingsfall",
    "signatures": [
@@ -2158,13 +2167,14 @@
    "contract": {
     "status": "signed",
     "weeklySalary": 14800,
-    "weeksRemaining": -33,
+    "weeksRemaining": 29,
     "signedWeek": 0
    },
    "teamId": null,
    "allies": [],
    "appearance": {
     "skinTone": "#7d4a2d",
+    "hairColor": "#7f1d1d",
     "hairStyle": "short",
     "facialHair": "none",
     "primaryColor": "#f8fafc",
@@ -2220,8 +2230,8 @@
    "popularity": 82,
    "potential": 89,
    "morale": 78,
-   "momentum": 45,
-   "fatigue": -6,
+   "momentum": 53,
+   "fatigue": 2,
    "injury": null,
    "finisher": "Last Rites",
    "signatures": [
@@ -2238,13 +2248,14 @@
    "contract": {
     "status": "signed",
     "weeklySalary": 18500,
-    "weeksRemaining": -16,
+    "weeksRemaining": 46,
     "signedWeek": 0
    },
    "teamId": null,
    "allies": [],
    "appearance": {
     "skinTone": "#7d4a2d",
+    "hairColor": "#7f1d1d",
     "hairStyle": "buzz",
     "facialHair": "none",
     "primaryColor": "#14532d",
@@ -2624,8 +2635,8 @@
    "popularity": 72,
    "potential": 80,
    "morale": 65,
-   "momentum": 20,
-   "fatigue": -2,
+   "momentum": 58,
+   "fatigue": 6,
    "injury": null,
    "finisher": "Pack Mentality",
    "signatures": [
@@ -2642,13 +2653,14 @@
    "contract": {
     "status": "signed",
     "weeklySalary": 9900,
-    "weeksRemaining": -42,
+    "weeksRemaining": 20,
     "signedWeek": 0
    },
    "teamId": "wolfe-brothers",
    "allies": [],
    "appearance": {
     "skinTone": "#f5d0b5",
+    "hairColor": "#1c1917",
     "hairStyle": "mohawk",
     "facialHair": "beard",
     "primaryColor": "#525252",
@@ -2704,8 +2716,8 @@
    "popularity": 70,
    "potential": 81,
    "morale": 83,
-   "momentum": 25,
-   "fatigue": -7,
+   "momentum": 63,
+   "fatigue": 1,
    "injury": null,
    "finisher": "Pack Mentality",
    "signatures": [
@@ -2722,13 +2734,14 @@
    "contract": {
     "status": "signed",
     "weeklySalary": 8600,
-    "weeksRemaining": -13,
+    "weeksRemaining": 49,
     "signedWeek": 0
    },
    "teamId": "wolfe-brothers",
    "allies": [],
    "appearance": {
     "skinTone": "#5a341f",
+    "hairColor": "#1c1917",
     "hairStyle": "buzz",
     "facialHair": "beard",
     "primaryColor": "#525252",
@@ -3027,8 +3040,8 @@
    "popularity": 66,
    "potential": 77,
    "morale": 84,
-   "momentum": 25,
-   "fatigue": -13,
+   "momentum": 63,
+   "fatigue": 10,
    "injury": null,
    "finisher": "Hostile Takeover",
    "signatures": [
@@ -3045,13 +3058,14 @@
    "contract": {
     "status": "signed",
     "weeklySalary": 6400,
-    "weeksRemaining": -14,
+    "weeksRemaining": 48,
     "signedWeek": 0
    },
    "teamId": "the-profits",
    "allies": [],
    "appearance": {
     "skinTone": "#e8b48f",
+    "hairColor": "#1c1917",
     "hairStyle": "short",
     "facialHair": "none",
     "primaryColor": "#166534",
@@ -3107,8 +3121,8 @@
    "popularity": 90,
    "potential": 93,
    "morale": 63,
-   "momentum": 44,
-   "fatigue": -14,
+   "momentum": 52,
+   "fatigue": 9,
    "injury": null,
    "finisher": "Lights Out",
    "signatures": [
@@ -3125,13 +3139,14 @@
    "contract": {
     "status": "signed",
     "weeklySalary": 21900,
-    "weeksRemaining": -41,
+    "weeksRemaining": 21,
     "signedWeek": 0
    },
    "teamId": null,
    "allies": [],
    "appearance": {
     "skinTone": "#c98e62",
+    "hairColor": "#7f1d1d",
     "hairStyle": "mohawk",
     "facialHair": "none",
     "primaryColor": "#0f172a",
@@ -3349,8 +3364,8 @@
    "popularity": 83,
    "potential": 84,
    "morale": 82,
-   "momentum": 19,
-   "fatigue": -6,
+   "momentum": 57,
+   "fatigue": 2,
    "injury": null,
    "finisher": "Plot Twist",
    "signatures": [
@@ -3367,13 +3382,14 @@
    "contract": {
     "status": "signed",
     "weeklySalary": 13100,
-    "weeksRemaining": 6,
+    "weeksRemaining": 68,
     "signedWeek": 0
    },
    "teamId": null,
    "allies": [],
    "appearance": {
     "skinTone": "#e8b48f",
+    "hairColor": "#a16207",
     "hairStyle": "long",
     "facialHair": "none",
     "primaryColor": "#f43f5e",
@@ -3591,8 +3607,8 @@
    "popularity": 69,
    "potential": 83,
    "morale": 78,
-   "momentum": 34,
-   "fatigue": -1,
+   "momentum": 72,
+   "fatigue": 7,
    "injury": null,
    "finisher": "Kiss of Death",
    "signatures": [
@@ -3609,14 +3625,14 @@
    "contract": {
     "status": "signed",
     "weeklySalary": 7000,
-    "weeksRemaining": -71,
+    "weeksRemaining": 81,
     "signedWeek": 0
    },
    "teamId": "crimson-kiss",
    "allies": [],
    "appearance": {
     "skinTone": "#7d4a2d",
-    "hairColor": "#1c1917",
+    "hairColor": "#6b4423",
     "hairStyle": "ponytail",
     "facialHair": "none",
     "primaryColor": "#b91c1c",
@@ -3915,8 +3931,8 @@
    "popularity": 98,
    "potential": 94,
    "morale": 78,
-   "momentum": 23,
-   "fatigue": 0,
+   "momentum": 61,
+   "fatigue": 8,
    "injury": null,
    "finisher": "Showtime Slam",
    "signatures": [
@@ -3940,6 +3956,7 @@
    "allies": [],
    "appearance": {
     "skinTone": "#e8b48f",
+    "hairColor": "#3f2a1d",
     "hairStyle": "bald",
     "facialHair": "goatee",
     "primaryColor": "#0a0a0a",
@@ -4238,8 +4255,8 @@
    "popularity": 93,
    "potential": 95,
    "morale": 81,
-   "momentum": 29,
-   "fatigue": -13,
+   "momentum": 67,
+   "fatigue": 10,
    "injury": null,
    "finisher": "Olympic Lock",
    "signatures": [
@@ -4263,6 +4280,7 @@
    "allies": [],
    "appearance": {
     "skinTone": "#7d4a2d",
+    "hairColor": "#1c1917",
     "hairStyle": "bald",
     "facialHair": "none",
     "primaryColor": "#1e3a8a",
@@ -4723,8 +4741,8 @@
    "popularity": 94,
    "potential": 92,
    "morale": 76,
-   "momentum": 34,
-   "fatigue": -3,
+   "momentum": 72,
+   "fatigue": 5,
    "injury": null,
    "finisher": "Royal Wheel",
    "signatures": [
@@ -4966,8 +4984,8 @@
    "popularity": 64,
    "potential": 88,
    "morale": 70,
-   "momentum": 26,
-   "fatigue": -11,
+   "momentum": 64,
+   "fatigue": 12,
    "injury": null,
    "finisher": "Bushido Kick",
    "signatures": [
@@ -4991,6 +5009,7 @@
    "allies": [],
    "appearance": {
     "skinTone": "#e8b48f",
+    "hairColor": "#d6d3d1",
     "hairStyle": "ponytail",
     "facialHair": "none",
     "primaryColor": "#0a0a0a",
@@ -5046,8 +5065,8 @@
    "popularity": 66,
    "potential": 85,
    "morale": 71,
-   "momentum": 45,
-   "fatigue": -12,
+   "momentum": 53,
+   "fatigue": 11,
    "injury": null,
    "finisher": "Sandstorm Slam",
    "signatures": [
@@ -5071,7 +5090,7 @@
    "allies": [],
    "appearance": {
     "skinTone": "#e8b48f",
-    "hairColor": "#1c1917",
+    "hairColor": "#6b4423",
     "hairStyle": "short",
     "facialHair": "beard",
     "primaryColor": "#a16207",
@@ -5127,8 +5146,8 @@
    "popularity": 70,
    "potential": 86,
    "morale": 76,
-   "momentum": 21,
-   "fatigue": -8,
+   "momentum": 59,
+   "fatigue": 0,
    "injury": null,
    "finisher": "Wildcard Driver",
    "signatures": [
@@ -5152,6 +5171,7 @@
    "allies": [],
    "appearance": {
     "skinTone": "#a86b45",
+    "hairColor": "#a16207",
     "hairStyle": "long",
     "facialHair": "none",
     "primaryColor": "#0d9488",
@@ -5450,8 +5470,8 @@
    "popularity": 52,
    "potential": 82,
    "morale": 72,
-   "momentum": 42,
-   "fatigue": -1,
+   "momentum": 50,
+   "fatigue": 7,
    "injury": null,
    "finisher": "Moss Clutch",
    "signatures": [
@@ -5475,6 +5495,7 @@
    "allies": [],
    "appearance": {
     "skinTone": "#f5d0b5",
+    "hairColor": "#d6d3d1",
     "hairStyle": "short",
     "facialHair": "none",
     "primaryColor": "#2563eb",
@@ -5530,8 +5551,8 @@
    "popularity": 64,
    "potential": 81,
    "morale": 75,
-   "momentum": 18,
-   "fatigue": -12,
+   "momentum": 56,
+   "fatigue": 11,
    "injury": null,
    "finisher": "Knockout Knox",
    "signatures": [
@@ -5555,6 +5576,7 @@
    "allies": [],
    "appearance": {
     "skinTone": "#a86b45",
+    "hairColor": "#a16207",
     "hairStyle": "buzz",
     "facialHair": "none",
     "primaryColor": "#334155",
