@@ -70,9 +70,26 @@ from CHECKPOINT.md", and it will pick up at **Next up** below.
 - Contracts: sign / renew / release with live interest preview, counter-offers, severance, auto-renew toggle.
 - Unit tests: rating model (8), save system (3).
 
-### Phase 3 — Booking & simulation ⏳ next
+### Phase 3 — Booking & simulation 🟡 in progress (paused here)
+Done (written, typechecks; not yet browser-tested):
+- `/booking` index and `/booking/[showId]` card builder: show settings (venue, ticket price, marketing, live
+  attendance/revenue projection), add/edit/reorder (drag + up/down) segments, participants, match type,
+  stipulation, title, rivalry link, duration, AI-simulated vs booked outcome, main event, live validation,
+  AI Booker recommendations with score + reasons and accept / reject / replace-all, "Play this match" link.
+- `/shows/[id]` results: rating, stars, attendance, viewership, satisfaction, money breakdown, per-segment
+  summaries with quality breakdown, popularity changes.
+- `/rivalries`: stage tracker, intensity/fan interest, event timeline, book confrontation/match on next show,
+  pause/resume/end/edit, create rivalry, storyline suggestions (contenders, turns, team splits).
+- `/finances`: ledger-driven KPIs, revenue vs expenses chart, cash + forecast chart, by-category, by-brand, transactions.
+- `/calendar`: 8-week schedule, PLEs, booked title matches, contract expiries, injury returns.
 ### Phase 4 — Playable 3D match ⏳
 ### Phase 5–6 — Polish, tests, deploy ⏳
 
-## Next up
-Booking screen (card builder + validation + AI Booker), show results, rivalries, finances, calendar, history, settings.
+## Next up (resume here)
+1. Write `/history` (match history with filters) and `/settings` (controls remap, difficulty, match time,
+   rating-weight overrides, save slots / export / import / reset, optional Supabase cloud save, asset credits).
+2. Browser-test every Phase 3 screen (dev server + screenshots), fix issues.
+3. Unit tests: match simulator, booking validation, finance calculations.
+4. Checkpoint, then Phase 4: playable match page `/match` — the engine (`src/engine/live-match.ts`),
+   poses and wrestler model are already written; needs the R3F match scene, HUD, controls, AI, results
+   wiring (`recordExhibition` / `segment.playedResult`).
