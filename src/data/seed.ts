@@ -11,7 +11,7 @@ import type {
   Wrestler,
 } from "../engine/types";
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export const ROSTER_WRESTLERS = roster.wrestlers as unknown as Wrestler[];
 export const ROSTER_TEAMS = roster.teams as unknown as { id: string; name: string; members: [string, string]; brand: BrandId; chemistry: number }[];
@@ -148,7 +148,7 @@ export function createUniverse(options: NewUniverseOptions): Universe {
   for (const w of ROSTER_WRESTLERS) {
     const copy = structuredClone(w);
     wrestlers[w.id] = copy;
-    defaults[w.id] = { attributes: { ...w.attributes }, popularity: w.popularity, potential: w.potential, overallOverride: null };
+    defaults[w.id] = { attributes: { ...w.attributes }, popularity: w.popularity, potential: w.potential, overallOverride: null, appearance: { ...w.appearance } };
   }
   const teams: Record<string, Team> = {};
   for (const t of ROSTER_TEAMS) {

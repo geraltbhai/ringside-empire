@@ -13,6 +13,8 @@ export interface Pose {
   rShoulder: number;
   lShoulderSide: number; // abduction
   rShoulderSide: number;
+  lArmTwist: number; // rotation about the upper-arm axis (needed for flexing poses)
+  rArmTwist: number;
   lElbow: number;
   rElbow: number;
   lHip: number;
@@ -32,6 +34,8 @@ export const NEUTRAL: Pose = {
   rShoulder: 0.1,
   lShoulderSide: 0.25,
   rShoulderSide: 0.25,
+  lArmTwist: 0,
+  rArmTwist: 0,
   lElbow: 0.5,
   rElbow: 0.5,
   lHip: 0,
@@ -182,6 +186,15 @@ export function poseFor(anim: string, t: number): Pose {
     }
     case "defeat":
       return p({ rootY: -1.02, rootTilt: -1.5, lShoulderSide: 1.5, rShoulderSide: 1.5, head: 0.2 });
+    case "flex": {
+      // double biceps, with a little pulse
+      const pulse = Math.max(0, Math.sin(t * 2.2)) * 0.12;
+      return p({ spine: -0.08, head: -0.12, lShoulderSide: 1.45, rShoulderSide: 1.45, lArmTwist: Math.PI / 2, rArmTwist: Math.PI / 2, lElbow: 1.95 + pulse, rElbow: 1.95 + pulse, lShoulder: 0.05, rShoulder: 0.05, lHip: 0.08, rHip: -0.08, lKnee: 0.08, rKnee: 0.08 });
+    }
+    case "lat-spread":
+      return p({ spine: -0.05, head: -0.1, lShoulderSide: 0.75, rShoulderSide: 0.75, lArmTwist: -0.9, rArmTwist: -0.9, lElbow: 1.75, rElbow: 1.75, lShoulder: -0.25, rShoulder: -0.25, lHip: 0.05, rHip: -0.05 });
+    case "most-muscular":
+      return p({ spine: 0.35, head: 0.05, lShoulder: 0.5, rShoulder: 0.5, lShoulderSide: 0.35, rShoulderSide: 0.35, lArmTwist: 0.9, rArmTwist: 0.9, lElbow: 1.7, rElbow: 1.7, lKnee: 0.35, rKnee: 0.35, lHip: 0.3, rHip: 0.3, rootY: -0.06 });
     case "taunt":
       return p({ spine: -0.2, head: -0.3, lShoulder: 0.6, rShoulder: 2.9, rShoulderSide: 0.6, rElbow: 0.4 * Math.abs(Math.sin(t * 4)) });
     default:

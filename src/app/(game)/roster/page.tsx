@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown, ArrowUp, Plus, Search } from "lucide-react";
+import { ArrowDown, ArrowUp, Dumbbell, Plus, Search } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { BrandBadge, OverallBadge } from "@/components/game";
@@ -150,6 +150,9 @@ export default function RosterPage() {
                   </button>
                 </th>
               ))}
+              <th className="px-2 py-2 pr-3 text-right">
+                <span className="sr-only">Look</span>
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-rope">
@@ -187,7 +190,12 @@ export default function RosterPage() {
                   <td className="hidden px-2 text-right tabular-nums xl:table-cell">{Math.round(w.morale)}</td>
                   <td className={cn("hidden px-2 text-right tabular-nums xl:table-cell", w.fatigue >= 70 && "text-bad")}>{Math.round(w.fatigue)}</td>
                   <td className="hidden px-2 text-right tabular-nums lg:table-cell">{w.age}</td>
-                  <td className="hidden px-2 pr-3 text-right text-xs text-muted xl:table-cell">{w.contract.status === "signed" || (w.contract.status === "legend-deal" && w.contract.weeksRemaining > 0) ? `${w.contract.weeksRemaining} wk` : w.contract.status === "legend-deal" ? "Legend" : "Free agent"}</td>
+                  <td className="hidden px-2 text-right text-xs text-muted xl:table-cell">{w.contract.status === "signed" || (w.contract.status === "legend-deal" && w.contract.weeksRemaining > 0) ? `${w.contract.weeksRemaining} wk` : w.contract.status === "legend-deal" ? "Legend" : "Free agent"}</td>
+                  <td className="px-2 pr-3 text-right">
+                    <Link href={`/roster/${w.id}/look`} className="inline-grid h-8 w-8 place-items-center rounded-md text-muted hover:bg-canvas-2 hover:text-gold-light" title={`Edit ${w.ringName}'s look in 3D`} aria-label={`Edit ${w.ringName}'s look in 3D`}>
+                      <Dumbbell size={16} />
+                    </Link>
+                  </td>
                 </tr>
               );
             })}

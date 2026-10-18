@@ -42,7 +42,7 @@ function blankWrestler(week: number): Wrestler {
     contract: { status: "free-agent", weeklySalary: 0, weeksRemaining: 0, signedWeek: week },
     teamId: null,
     allies: [],
-    appearance: { skinTone: "#c98e62", hairColor: "#1c1917", hairStyle: "short", facialHair: "none", primaryColor: "#0d9488", secondaryColor: "#f8fafc", outfit: "trunks", bulk: 0.4, mask: false },
+    appearance: { skinTone: "#c98e62", hairColor: "#1c1917", hairStyle: "short", facialHair: "none", primaryColor: "#0d9488", secondaryColor: "#f8fafc", outfit: "trunks", bulk: 0.4, mask: false, muscle: 0.6, definition: 0.55, bodyFat: 0.15, shoulderWidth: 0.5, armSize: 0.5, legSize: 0.5, bootColor: "#111318", kneepads: true, wristTape: false },
     trend: "rising",
     isCustom: true,
     lastMatchWeek: null,

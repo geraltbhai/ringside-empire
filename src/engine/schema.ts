@@ -3,7 +3,8 @@
  * to SCHEMA_VERSION before they reach the game.
  */
 import { z } from "zod";
-import { DEFAULT_SETTINGS, SCHEMA_VERSION } from "../data/seed";
+import { DEFAULT_SETTINGS, ROSTER_WRESTLERS, SCHEMA_VERSION } from "../data/seed";
+import { defaultBuild } from "./appearance";
 import { ATTRIBUTE_KEYS, type Universe } from "./types";
 
 const score = z.number().min(0).max(100);
@@ -56,6 +57,15 @@ export const wrestlerSchema = z.object({
     outfit: z.enum(["trunks", "tights", "singlet", "pants", "bodysuit"]),
     bulk: z.number().min(0).max(1),
     mask: z.boolean(),
+    muscle: z.number().min(0).max(1),
+    definition: z.number().min(0).max(1),
+    bodyFat: z.number().min(0).max(1),
+    shoulderWidth: z.number().min(0).max(1),
+    armSize: z.number().min(0).max(1),
+    legSize: z.number().min(0).max(1),
+    bootColor: z.string(),
+    kneepads: z.boolean(),
+    wristTape: z.boolean(),
   }),
   trend: z.enum(["rising", "peak", "declining"]),
   isCustom: z.boolean(),
@@ -93,9 +103,24 @@ export const universeSchema = z
   .passthrough();
 
 /** Forward migrations keyed by the version they upgrade *from*. */
+type RawWrestler = Record<string, unknown> & { id: string; appearance: Record<string, unknown>; style: never; division: never; weightLbs: number; heightIn: number; age: number };
+
 const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => Record<string, unknown>> = {
-  // Example for future versions:
-  // 1: (raw) => ({ ...raw, schemaVersion: 2, newField: defaultValue }),
+  /** v2: sculpted bodies. Adds physique and gear fields to every appearance and keeps an original look for "reset". */
+  1: (raw) => {
+    const wrestlers = { ...(raw.wrestlers as Record<string, RawWrestler>) };
+    const defaults = { ...(raw.defaults as Record<string, Record<string, unknown>>) };
+    for (const [id, w] of Object.entries(wrestlers)) {
+      const seeded = ROSTER_WRESTLERS.find((r) => r.id === id);
+      const build = seeded
+        ? Object.fromEntries(Object.entries(seeded.appearance).filter(([k]) => !(k in w.appearance)))
+        : defaultBuild({ id, style: w.style, division: w.division, weightLbs: w.weightLbs, heightIn: w.heightIn, age: w.age, bulk: Number(w.appearance.bulk ?? 0.4) });
+      const appearance = { ...build, ...w.appearance };
+      wrestlers[id] = { ...w, appearance };
+      if (defaults[id]) defaults[id] = { ...defaults[id], appearance: { ...appearance } };
+    }
+    return { ...raw, wrestlers, defaults, schemaVersion: 2 };
+  },
 };
 
 export function migrate(raw: Record<string, unknown>): Record<string, unknown> {

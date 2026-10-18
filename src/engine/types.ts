@@ -108,10 +108,25 @@ export interface Appearance {
   primaryColor: string;
   secondaryColor: string;
   outfit: "trunks" | "tights" | "singlet" | "pants" | "bodysuit";
-  /** 0 = lean, 1 = very heavy. Drives 3D body proportions. */
+  /** Frame / bone thickness: 0 = slight, 1 = very heavy. */
   bulk: number;
   mask: boolean;
+  /** 0..1 muscle mass. */
+  muscle: number;
+  /** 0..1 how visible the separation between muscles is. */
+  definition: number;
+  /** 0..1 softness: belly, smoother contours. */
+  bodyFat: number;
+  /** 0..1, 0.5 = neutral. */
+  shoulderWidth: number;
+  armSize: number;
+  legSize: number;
+  bootColor: string;
+  kneepads: boolean;
+  wristTape: boolean;
 }
+
+export const APPEARANCE_BODY_KEYS = ["muscle", "definition", "bodyFat", "shoulderWidth", "armSize", "legSize", "bulk"] as const;
 
 export type ContractStatus = "signed" | "free-agent" | "legend-deal";
 
@@ -440,7 +455,7 @@ export interface Universe {
   audienceDemand: number;
   wrestlers: Record<string, Wrestler>;
   /** Snapshot of each wrestler's original ratings for "restore defaults". */
-  defaults: Record<string, Pick<Wrestler, "attributes" | "popularity" | "potential" | "overallOverride">>;
+  defaults: Record<string, Pick<Wrestler, "attributes" | "popularity" | "potential" | "overallOverride"> & { appearance?: Appearance }>;
   brands: Record<BrandId, Brand>;
   teams: Record<string, Team>;
   championships: Record<string, Championship>;

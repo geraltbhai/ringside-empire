@@ -1,7 +1,7 @@
 "use client";
 
 import { weekLabel } from "@/engine/calendar";
-import { Copy, Gamepad2, Pencil } from "lucide-react";
+import { Copy, Dumbbell, Gamepad2, Pencil } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { BrandBadge, OverallBadge } from "@/components/game";
@@ -93,6 +93,11 @@ export default function WrestlerProfile() {
               <Link href={`/roster/${w.id}/edit`}>
                 <Button variant="primary">
                   <Pencil size={15} /> Edit ratings & details
+                </Button>
+              </Link>
+              <Link href={`/roster/${w.id}/look`}>
+                <Button variant="gold">
+                  <Dumbbell size={15} /> Edit look in 3D
                 </Button>
               </Link>
               <Link href={`/match?p=${w.id}`}>

@@ -27,14 +27,20 @@ export function ProceduralPortrait({ w, className }: { w: Wrestler; className?: 
   const a = w.appearance;
   const [bg0, bg1] = BRAND_BG[w.brand];
   const bulk = a.bulk;
-  const shoulder = 58 + bulk * 22 + (w.division === "women" ? -8 : 0);
-  const neck = 14 + bulk * 7 + (w.division === "women" ? -3 : 0);
+  const m = a.muscle ?? 0.6;
+  const women = w.division === "women";
+  const shoulder = 52 + m * 20 + (a.shoulderWidth ?? 0.5) * 10 + bulk * 12 + (women ? -8 : 0);
+  const neck = 13 + bulk * 5 + m * 6 + (women ? -3 : 0);
+  const trap = 6 + m * 14; // how high the traps rise toward the ears
+  const cut = (a.definition ?? 0.5) * (1 - (a.bodyFat ?? 0.15));
   const headW = 30 + bulk * 3 + (w.division === "women" ? -2 : 0);
   const skin = a.skinTone;
   const skinDark = shade(skin, -28);
   const heel = w.alignment === "heel";
   const rim = heel ? "#ff2d55" : w.alignment === "tweener" ? "#c084fc" : "#bfe1ff";
-  const bareChest = a.outfit === "trunks" || a.outfit === "singlet";
+  // Men wrestle bare-chested unless in a bodysuit; women wear an athletic top unless in a bodysuit.
+  const bareChest = a.outfit !== "bodysuit";
+  const sportsTop = bareChest && women && a.outfit !== "singlet";
   const browTilt = heel ? 5 : 0;
 
   const hair = (() => {
@@ -101,16 +107,32 @@ export function ProceduralPortrait({ w, className }: { w: Wrestler; className?: 
       <polygon points="60,0 140,0 175,240 25,240" fill={`url(#beam${uid})`} opacity={0.5} />
       {/* torso */}
       <path
-        d={`M${100 - shoulder} 240 Q${100 - shoulder} 176 ${100 - neck - 10} 166 L${100 + neck + 10} 166 Q${100 + shoulder} 176 ${100 + shoulder} 240Z`}
+        d={`M${100 - shoulder} 240 C${100 - shoulder - 4} 200 ${100 - shoulder + 2} 182 ${100 - shoulder + 18} 178 C${100 - shoulder + 30} 175 ${100 - neck - 8} ${172 - trap} ${100 - neck} ${160 - trap * 0.4} L${100 + neck} ${160 - trap * 0.4} C${100 + neck + 8} ${172 - trap} ${100 + shoulder - 30} 175 ${100 + shoulder - 18} 178 C${100 + shoulder - 2} 182 ${100 + shoulder + 4} 200 ${100 + shoulder} 240Z`}
         fill={bareChest ? `url(#skin${uid})` : a.primaryColor}
       />
+      {sportsTop && <path d={`M${100 - shoulder + 22} 240 L${100 - shoulder + 24} 200 Q100 ${190} ${100 + shoulder - 24} 200 L${100 + shoulder - 22} 240Z`} fill={a.primaryColor} />}
+      {/* deltoid separation */}
+      <g stroke={bareChest ? skinDark : shade(a.primaryColor, -30)} strokeWidth={1.8} fill="none" opacity={0.55}>
+        <path d={`M${100 - shoulder + 10} 240 Q${100 - shoulder + 12} 206 ${100 - shoulder + 24} 186`} />
+        <path d={`M${100 + shoulder - 10} 240 Q${100 + shoulder - 12} 206 ${100 + shoulder - 24} 186`} />
+      </g>
       {bareChest && a.outfit === "singlet" && (
         <g fill={a.primaryColor}>
           <path d={`M${100 - neck - 14} 168 L${100 - neck - 4} 168 L${100 - 10} 240 L${100 - 26} 240Z`} />
           <path d={`M${100 + neck + 14} 168 L${100 + neck + 4} 168 L${100 + 10} 240 L${100 + 26} 240Z`} />
         </g>
       )}
-      {bareChest && <path d={`M${100 - 22} 200 Q100 212 ${100 + 22} 200`} stroke={skinDark} strokeWidth={2} fill="none" opacity={0.6} />}
+      {bareChest && (
+        <g stroke={skinDark} fill="none" strokeLinecap="round" opacity={0.35 + cut * 0.45}>
+          {/* pecs */}
+          <path d={`M98 ${214 + m * 6} Q${100 - shoulder * 0.45} ${226 + m * 8} ${100 - shoulder + 22} ${196}`} strokeWidth={2 + m * 1.5} />
+          <path d={`M102 ${214 + m * 6} Q${100 + shoulder * 0.45} ${226 + m * 8} ${100 + shoulder - 22} ${196}`} strokeWidth={2 + m * 1.5} />
+          <path d="M100 186 L100 240" strokeWidth={1.4} />
+          {/* collarbones */}
+          <path d={`M${100 - neck + 2} 176 Q${100 - neck - 14} 182 ${100 - shoulder + 26} 182`} strokeWidth={1.2} opacity={0.6} />
+          <path d={`M${100 + neck - 2} 176 Q${100 + neck + 14} 182 ${100 + shoulder - 26} 182`} strokeWidth={1.2} opacity={0.6} />
+        </g>
+      )}
       {!bareChest && <path d={`M${100 - shoulder + 12} 240 L${100 - 10} 176 L${100 + 10} 176 L${100 + shoulder - 12} 240`} stroke={a.secondaryColor} strokeWidth={4} fill="none" opacity={0.8} />}
       {/* neck */}
       <rect x={100 - neck} y={128} width={neck * 2} height={44} rx={8} fill={skinDark} />

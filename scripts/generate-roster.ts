@@ -8,6 +8,7 @@ import path from "node:path";
 import { TEAM_DEFS, WRESTLER_DEFS, type WrestlerDef } from "../src/data/roster-source";
 import { entertainmentRating, formulaOverall } from "../src/engine/rating";
 import { hashString } from "../src/engine/rng";
+import { defaultBuild } from "../src/engine/appearance";
 import {
   ATTRIBUTE_KEYS,
   type Appearance,
@@ -78,6 +79,7 @@ function buildAttributes(def: WrestlerDef): Attributes {
 function appearance(def: WrestlerDef): Appearance {
   const h = hashString(def.id);
   const bulkFromWeight = Math.max(0, Math.min(1, (def.w - (def.division === "women" ? 110 : 170)) / 200));
+  const bulk = def.look?.bulk ?? Math.round(bulkFromWeight * 100) / 100;
   return {
     skinTone: SKIN[h % SKIN.length],
     hairColor: HAIR[(h >>> 3) % HAIR.length],
@@ -86,8 +88,9 @@ function appearance(def: WrestlerDef): Appearance {
     primaryColor: "#334155",
     secondaryColor: "#f8fafc",
     outfit: "trunks",
-    bulk: Math.round(bulkFromWeight * 100) / 100,
+    bulk,
     mask: false,
+    ...defaultBuild({ id: def.id, style: def.style, division: def.division, weightLbs: def.w, heightIn: def.h, age: def.age, bulk }),
     ...def.look,
   };
 }

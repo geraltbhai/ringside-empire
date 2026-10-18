@@ -1,6 +1,7 @@
 "use client";
 
-import { ImagePlus, RotateCcw, Save, Trash2 } from "lucide-react";
+import { Dumbbell, ImagePlus, RotateCcw, Save, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useRef, useState } from "react";
 import { ATTRIBUTE_GROUPS } from "@/components/attributes";
 import { OverallBadge } from "@/components/game";
@@ -318,7 +319,18 @@ export function WrestlerEditor({
           </Panel>
         )}
 
-        <Panel title="Appearance" action={<span className="text-xs text-muted">Drives the portrait and 3D model</span>}>
+        <Panel
+          title="Appearance"
+          action={
+            isNew ? (
+              <span className="text-xs text-muted">Fine-tune in the 3D studio after creating</span>
+            ) : (
+              <Link href={`/roster/${w.id}/look`} className="flex items-center gap-1.5 text-sm font-semibold text-gold-light hover:underline">
+                <Dumbbell size={15} /> Open the 3D character studio
+              </Link>
+            )
+          }
+        >
           <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {(
               [
@@ -356,9 +368,10 @@ export function WrestlerEditor({
             <label className={cn("flex items-center gap-2 self-end pb-2 text-sm")}>
               <input type="checkbox" checked={w.appearance.mask} onChange={(e) => setLook("mask", e.target.checked)} /> Masked
             </label>
-            <div className="sm:col-span-2">
-              <Slider label="Build (lean → heavy)" value={Math.round(w.appearance.bulk * 100)} onChange={(v) => setLook("bulk", v / 100)} min={0} />
-            </div>
+            <Slider label="Muscle mass" value={Math.round(w.appearance.muscle * 100)} onChange={(v) => setLook("muscle", v / 100)} min={0} />
+            <Slider label="Definition" value={Math.round(w.appearance.definition * 100)} onChange={(v) => setLook("definition", v / 100)} min={0} />
+            <Slider label="Body fat" value={Math.round(w.appearance.bodyFat * 100)} onChange={(v) => setLook("bodyFat", v / 100)} min={0} />
+            <Slider label="Frame (slight → huge)" value={Math.round(w.appearance.bulk * 100)} onChange={(v) => setLook("bulk", v / 100)} min={0} />
           </div>
         </Panel>
       </div>

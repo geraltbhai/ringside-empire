@@ -544,6 +544,12 @@ export function restoreDefaults(universe: Universe, id: string) {
   w.overallOverride = d.overallOverride;
 }
 
+/** Brings a wrestler's look (body, hair, gear) back to how they started this universe. */
+export function restoreLook(universe: Universe, id: string) {
+  const look = universe.defaults[id]?.appearance;
+  if (look) wrestler(universe, id).appearance = { ...look };
+}
+
 export function createAlternateVersion(universe: Universe, baseId: string, label: string): Wrestler {
   const base = wrestler(universe, baseId);
   const id = `${slugify(base.id)}-${slugify(label) || "alt"}-${universe.counters.nextId}`;
@@ -563,7 +569,7 @@ export function createAlternateVersion(universe: Universe, baseId: string, label
     injury: null,
   };
   universe.wrestlers[id] = copy;
-  universe.defaults[id] = { attributes: { ...copy.attributes }, popularity: copy.popularity, potential: copy.potential, overallOverride: copy.overallOverride };
+  universe.defaults[id] = { attributes: { ...copy.attributes }, popularity: copy.popularity, potential: copy.potential, overallOverride: copy.overallOverride, appearance: { ...copy.appearance } };
   return copy;
 }
 
@@ -572,7 +578,7 @@ export function createCustomWrestler(universe: Universe, w: Omit<Wrestler, "id">
   universe.counters.nextId++;
   const created: Wrestler = { ...w, id, isCustom: true };
   universe.wrestlers[id] = created;
-  universe.defaults[id] = { attributes: { ...created.attributes }, popularity: created.popularity, potential: created.potential, overallOverride: created.overallOverride };
+  universe.defaults[id] = { attributes: { ...created.attributes }, popularity: created.popularity, potential: created.potential, overallOverride: created.overallOverride, appearance: { ...created.appearance } };
   return created;
 }
 
