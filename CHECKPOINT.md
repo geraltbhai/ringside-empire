@@ -70,8 +70,7 @@ from CHECKPOINT.md", and it will pick up at **Next up** below.
 - Contracts: sign / renew / release with live interest preview, counter-offers, severance, auto-renew toggle.
 - Unit tests: rating model (8), save system (3).
 
-### Phase 3 — Booking & simulation 🟡 in progress (paused here)
-Done (written, typechecks; not yet browser-tested):
+### Phase 3 — Booking & simulation ✅
 - `/booking` index and `/booking/[showId]` card builder: show settings (venue, ticket price, marketing, live
   attendance/revenue projection), add/edit/reorder (drag + up/down) segments, participants, match type,
   stipulation, title, rivalry link, duration, AI-simulated vs booked outcome, main event, live validation,
@@ -103,10 +102,8 @@ Done (written, typechecks; not yet browser-tested):
 ### Phase 5–6 — Polish, tests, deploy ⏳
 
 ## Next up (resume here)
-1. Re-screenshot booking results (match-up card layout), finances (charts) and settings after the last fixes.
-2. Unit tests: match simulator (probabilistic upsets, title changes only on decisive finishes), booking validation
-   (double-booking, injured, wrong brand, title rules), finance calculations, a full simulated week (records,
-   popularity, rivalries progress, transactions update cash).
-4. Checkpoint, then Phase 4: playable match page `/match` — the engine (`src/engine/live-match.ts`),
-   poses and wrestler model are already written; needs the R3F match scene, HUD, controls, AI, results
-   wiring (`recordExhibition` / `segment.playedResult`).
+Phase 4: playable match page `/match` — the engine (`src/engine/live-match.ts`), poses and the sculpted wrestler
+model already exist; needs the R3F match scene, camera, HUD, keyboard controls, pause, result screen and wiring
+into the universe (`recordExhibition` for quick matches, `segment.playedResult` for "Play this match" from booking).
+
+Tests: 39 passing (rating 8, save/migration 4, physiques 2, simulation 6, booking 9, finance/universe/contracts 10).
