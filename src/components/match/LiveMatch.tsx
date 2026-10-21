@@ -192,8 +192,11 @@ const MatchView = memo(function MatchView({ use3d, player, opponent, state, fx, 
   const colors: [string, string] = [player.appearance.primaryColor, opponent.appearance.primaryColor];
   if (!use3d || failed3d) {
     return (
-      <div className="mx-auto h-full max-w-3xl pt-24">
-        <TopDownView state={state} colors={colors} />
+      <div className="mx-auto flex h-full max-w-3xl flex-col pt-24">
+        <p className="mx-auto mb-2 rounded bg-black/50 px-3 py-1 text-xs text-muted">3D graphics aren&apos;t available in this browser, so the match is shown from above. Everything else plays the same.</p>
+        <div className="min-h-0 flex-1">
+          <TopDownView state={state} colors={colors} />
+        </div>
       </div>
     );
   }

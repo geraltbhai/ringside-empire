@@ -29,7 +29,7 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <PageHeader title={u.promotionName} subtitle={`${u.name} — week ${u.week + 1}. Book this week's shows, then advance the calendar.`} />
 
-      <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-6">
         <Panel className="p-4">
           <Stat label="Cash balance" value={money(u.cash)} tone={u.cash < 0 ? "bad" : undefined} />
         </Panel>

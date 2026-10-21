@@ -12,7 +12,8 @@
     "e2e": "playwright test",
     "roster": "tsx scripts/generate-roster.ts",
     "sim:season": "tsx scripts/sim-season.ts",
-    "sim:match": "tsx scripts/sim-live.ts"
+    "sim:match": "tsx scripts/sim-live.ts",
+    "seed:supabase": "tsx scripts/seed-supabase.ts"
   },
   "dependencies": {
     "@fontsource/anton": "^5.3.0",
@@ -47,5 +48,8 @@
     "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=20.9"
   }
 }

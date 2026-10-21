@@ -175,8 +175,8 @@ export default function LookEditorPage() {
           <div className="relative h-[52vh] min-h-[360px] overflow-hidden rounded-xl border border-rope lg:h-[68vh]">
             <CharacterStage wrestler={preview} anim={anim} turntable={turntable} preset={preset} accent={accent} />
             <div className="pointer-events-none absolute left-3 top-3 flex items-start gap-3">
-              <Portrait w={preview} className="w-16 shadow-lg" />
-              <div className="font-display text-2xl drop-shadow">{original.ringName}</div>
+              <Portrait w={preview} className="w-12 shadow-lg sm:w-16" />
+              <div className="font-display hidden text-2xl drop-shadow md:block">{original.ringName}</div>
             </div>
             <div className="absolute right-3 top-3 flex gap-1">
               {(["full", "upper", "face"] as const).map((p) => (
