@@ -5,12 +5,14 @@
  * state every frame (wrestlers, referee, camera, sparks, crowd heat).
  */
 import { useFrame, useThree } from "@react-three/fiber";
-import { type MutableRefObject, useMemo, useRef } from "react";
+import { type MutableRefObject, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import type { MatchState } from "@/engine/live-match";
 import type { Appearance, Wrestler } from "@/engine/types";
 import * as sfx from "@/lib/sfx";
 import { ArenaLights, ArenaShell, RING, Ring } from "./ArenaScene";
+import { type Theme, themeFor } from "./branding";
+import { loadRapier, type Ragdoll, RagdollWorld } from "./human/ragdoll";
 import { type RigDriver, WrestlerModel } from "./WrestlerModel";
 
 export interface MatchFx {
@@ -22,6 +24,9 @@ export interface MatchFx {
   flash: [number, number];
   /** Pending body-slam impact on the canvas (0..1); the scene turns it into ring bounce. */
   mat: number;
+  /** Direction each fighter was last hit from (unit XZ), and whether it was a big move. */
+  hitDir: [{ x: number; z: number }, { x: number; z: number }];
+  big: [boolean, boolean];
 }
 
 /** Vertical give of the ring after a slam: a damped spring the mat and wrestlers ride on. */
@@ -53,11 +58,39 @@ const REFEREE: Pick<Wrestler, "appearance" | "division" | "heightIn"> = {
 };
 
 const LIFT_MOVES = new Set(["grapple-quick", "grapple-power", "signature", "finisher"]);
+const GRAB_MOVES = new Set(["grapple", "grapple-quick", "grapple-power", "signature", "finisher"]);
+
+interface Physics {
+  world: RagdollWorld | null;
+  dolls: (Ragdoll | null)[];
+  prevAnim: string[];
+  ikW: number[];
+  ikT: ({ L: THREE.Vector3; R: THREE.Vector3 } | null)[];
+}
 
 function Fighters({ wrestlers, state, fx, bounce }: { wrestlers: [Wrestler, Wrestler]; state: MutableRefObject<MatchState>; fx: MutableRefObject<MatchFx>; bounce: MutableRefObject<Bounce> }) {
   const drivers = [useRef<RigDriver>({ x: -1.6, z: 0, y: RING.matY, facing: Math.PI / 2, anim: "idle", animTime: 0 }), useRef<RigDriver>({ x: 1.6, z: 0, y: RING.matY, facing: -Math.PI / 2, anim: "idle", animTime: 0 })];
   const ref = useRef<RigDriver>({ x: 0, z: -1.8, y: RING.matY, facing: 0, anim: "ref-watch", animTime: 0 });
   const lastRef = useRef({ x: 0, z: -1.8 });
+  const physics = useRef<Physics>({ world: null, dolls: [null, null], prevAnim: ["idle", "idle"], ikW: [0, 0], ikT: [null, null] });
+
+  useEffect(() => {
+    let live = true;
+    const P = physics.current;
+    loadRapier().then(
+      (R) => {
+        if (live) P.world = new RagdollWorld(R, RING.matY);
+      },
+      (e) => console.warn("physics unavailable", e),
+    );
+    return () => {
+      live = false;
+      P.dolls.forEach((d) => d?.dispose());
+      P.dolls = [null, null];
+      P.world?.dispose();
+      P.world = null;
+    };
+  }, []);
 
   useFrame((_, dt) => {
     const s = state.current;
@@ -83,6 +116,61 @@ function Fighters({ wrestlers, state, fx, bounce }: { wrestlers: [Wrestler, Wres
       }
       fx.current.flash[i] = Math.max(0, fx.current.flash[i] - dt * 4);
       d.flash = fx.current.flash[i];
+      d.hitDir = fx.current.hitDir[i];
+    });
+
+    // ── Physics: ragdolls for knockdowns and slams, hand IK for grapples ──
+    const P = physics.current;
+    P.world?.step(dt);
+    s.fighters.forEach((f, i) => {
+      const d = drivers[i].current;
+      const prev = P.prevAnim[i];
+      if (P.world && d.anim === "fall" && prev !== "fall" && d.out && !P.dolls[i]) {
+        const slam = prev === "lifted";
+        const hd = fx.current.hitDir[i];
+        const sp = slam ? 1 : fx.current.big[i] ? 3.2 : 2.2;
+        const push = new THREE.Vector3(hd.x * sp, slam ? -3.5 : 0.6, hd.z * sp);
+        P.dolls[i] = P.world.spawn(d.out.rig, d.out.group, push, slam ? 2 : 1.2);
+      }
+      const doll = P.dolls[i];
+      if (doll && ((d.anim !== "fall" && d.anim !== "down") || doll.age > 1.8)) {
+        doll.dispose();
+        P.dolls[i] = null;
+      }
+      P.prevAnim[i] = d.anim;
+      d.control ??= {};
+      d.control.drive = (_rig, _group, ddt) => {
+        const rd = P.dolls[i];
+        if (!rd) return false;
+        rd.apply(ddt);
+        return true;
+      };
+
+      // hands on the opponent
+      const other = s.fighters[1 - i];
+      const me = d.out;
+      const them = drivers[1 - i].current.out;
+      let want = 0;
+      if (me && them) {
+        const left = new THREE.Vector3(Math.cos(f.facing), 0, -Math.sin(f.facing));
+        const at = (bone: string) => them.rig.by(bone).getWorldPosition(new THREE.Vector3());
+        if (f.state === "lockup" || (f.state === "grappled" && other.state === "lockup")) {
+          // collar-and-elbow: one hand behind the neck, the other on the arm
+          P.ikT[i] = { L: at("spine004").addScaledVector(left, 0.06), R: at("upper_armL") };
+          want = 1;
+        } else if (f.state === "attack" && f.move && GRAB_MOVES.has(f.move.kind) && other.state === "grappled" && !f.moveHit) {
+          const c = at("spine003");
+          P.ikT[i] = { L: c.clone().addScaledVector(left, 0.17), R: c.clone().addScaledVector(left, -0.17) };
+          want = 1;
+        } else if (f.anim === "pin" || f.anim === "submission") {
+          const c = at(f.anim === "pin" ? "spine003" : "spine004");
+          P.ikT[i] = { L: c.clone().addScaledVector(left, 0.12), R: c.clone().addScaledVector(left, -0.12) };
+          want = 1;
+        }
+      }
+      P.ikW[i] += (want - P.ikW[i]) * Math.min(1, dt * 10);
+      const tgt = P.ikT[i];
+      d.control.ik = tgt && P.ikW[i] > 0.01 ? { L: tgt.L, R: tgt.R, weight: P.ikW[i] } : undefined;
     });
     // Referee
     const r = ref.current;
@@ -217,7 +305,7 @@ function CameraRig({ state, fx, reducedMotion }: { state: MutableRefObject<Match
 }
 
 
-function BouncingRing({ state, fx, bounce }: { state: MutableRefObject<MatchState>; fx: MutableRefObject<MatchFx>; bounce: MutableRefObject<Bounce> }) {
+function BouncingRing({ state, fx, bounce, theme }: { state: MutableRefObject<MatchState>; fx: MutableRefObject<MatchFx>; bounce: MutableRefObject<Bounce>; theme: Theme }) {
   const group = useRef<THREE.Group>(null);
   const bodies = () => state.current.fighters;
   useFrame((_, rawDt) => {
@@ -233,20 +321,21 @@ function BouncingRing({ state, fx, bounce }: { state: MutableRefObject<MatchStat
   });
   return (
     <group ref={group}>
-      <Ring bodies={bodies} onRopeHit={(p) => sfx.rope(p)} />
+      <Ring theme={theme} bodies={bodies} onRopeHit={(p) => sfx.rope(p)} />
     </group>
   );
 }
 
 export default function MatchScene({ wrestlers, state, fx, reducedMotion, lowGraphics = false }: { wrestlers: [Wrestler, Wrestler]; state: MutableRefObject<MatchState>; fx: MutableRefObject<MatchFx>; reducedMotion: boolean; lowGraphics?: boolean }) {
   const bounce = useRef<Bounce>({ y: 0, v: 0 });
+  const theme = useMemo(() => themeFor([wrestlers[0].brand, wrestlers[1].brand]), [wrestlers]);
   return (
     <>
       <color attach="background" args={["#05060a"]} />
       <fog attach="fog" args={["#05060a", 18, 40]} />
       <ArenaLights shadows={!lowGraphics} />
-      <ArenaShell heat={() => state.current.crowdHeat} crowdCount={lowGraphics ? 500 : 1400} />
-      <BouncingRing state={state} fx={fx} bounce={bounce} />
+      <ArenaShell theme={theme} heat={() => state.current.crowdHeat} crowdCount={lowGraphics ? 500 : 1400} />
+      <BouncingRing state={state} fx={fx} bounce={bounce} theme={theme} />
       <Fighters wrestlers={wrestlers} state={state} fx={fx} bounce={bounce} />
       <Sparks fx={fx} />
       <CameraRig state={state} fx={fx} reducedMotion={reducedMotion} />

@@ -214,7 +214,7 @@ export function LiveMatch({ u, config, onExit, onRematch }: { u: Universe; confi
   // The engine state is mutable and lives in a ref; the HUD renders from immutable snapshots (below).
   const [initial] = useState(() => createMatch(player, opponent, { timeLimitSec: u.settings.matchMinutes * 60, difficulty: u.settings.difficulty, seed: `${u.seed}:${player.id}:${opponent.id}:${Date.now()}` }));
   const state = useRef<MatchState>(initial);
-  const fx = useRef<MatchFx>({ shake: 0, sparks: [], phase: "intro", phaseTime: 0, flash: [0, 0], mat: 0 });
+  const fx = useRef<MatchFx>({ shake: 0, sparks: [], phase: "intro", phaseTime: 0, flash: [0, 0], mat: 0, hitDir: [{ x: 0, z: 0 }, { x: 0, z: 0 }], big: [false, false] });
   const input = useRef<MatchInput>({ moveX: 0, moveZ: 0, run: false, pressed: {} });
   const held = useRef(new Set<ControlAction>());
   const paused = useRef(false);
@@ -349,6 +349,10 @@ export function LiveMatch({ u, config, onExit, onRematch }: { u: Universe; confi
           for (const e of s.events) {
             if (e.type === "hit") {
               const ti = s.fighters.findIndex((x) => x.id === e.target);
+              const by = s.fighters[1 - ti];
+              const len = Math.hypot(e.x - by.x, e.z - by.z) || 1;
+              f.hitDir[ti] = { x: (e.x - by.x) / len, z: (e.z - by.z) / len };
+              f.big[ti] = e.big;
               f.flash[ti] = 1;
               f.shake += e.big ? 1.2 : e.damage > 5 ? 0.45 : 0.15;
               f.sparks.push({ x: e.x, z: e.z, y: 2.3, big: e.big, color: "#ffd27a" });

@@ -16,6 +16,7 @@
     "seed:supabase": "tsx scripts/seed-supabase.ts"
   },
   "dependencies": {
+    "@dimforge/rapier3d-compat": "^0.14.0",
     "@fontsource/anton": "^5.3.0",
     "@fontsource/barlow": "^5.3.0",
     "@fontsource/barlow-condensed": "^5.3.0",

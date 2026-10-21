@@ -17,8 +17,8 @@ function OrbitCamera() {
 }
 
 function Pair() {
-  const a = ROSTER_WRESTLERS.find((w) => w.id === "cole-maddox")!;
-  const b = ROSTER_WRESTLERS.find((w) => w.id === "solomon-reyes")!;
+  const a = ROSTER_WRESTLERS.find((w) => w.id === "cody-rhodes")!;
+  const b = ROSTER_WRESTLERS.find((w) => w.id === "roman-reigns")!;
   const da = useRef<RigDriver>({ x: -1, z: 0, facing: Math.PI / 2, anim: "idle", animTime: 0 });
   const db = useRef<RigDriver>({ x: 1, z: 0, facing: -Math.PI / 2, anim: "idle", animTime: 0.7 });
   useFrame((_, dt) => {

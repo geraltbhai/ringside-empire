@@ -5,8 +5,10 @@
  * and arena lighting. No external models are loaded, so nothing can fail to fetch.
  */
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
+import { brandTextures, THEMES, type Theme } from "./branding";
 
 export const RING = {
   half: 3.05, // ring is 6.1 m (20 ft) square, measured between posts
@@ -116,59 +118,85 @@ function DynamicRopes({ colors, bodies, onHit }: { colors: string[]; bodies: () 
   );
 }
 
+/** Brand textures need the display font; build them once it has loaded. */
+export function useBrandTextures(theme: Theme) {
+  const [fontsReady, setFontsReady] = useState(false);
+  useEffect(() => {
+    let live = true;
+    const fonts = typeof document !== "undefined" ? document.fonts : undefined;
+    if (!fonts) return;
+    Promise.all([fonts.load('900 100px "Anton"'), fonts.ready]).finally(() => live && setFontsReady(true));
+    return () => {
+      live = false;
+    };
+  }, []);
+  // fontsReady re-runs the build once the display font can be drawn
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const tex = useMemo(() => (typeof document === "undefined" ? null : brandTextures(theme)), [theme, fontsReady]);
+  useEffect(() => () => tex?.dispose(), [tex]);
+  return tex;
+}
+
 export function Ring({
-  ropeColors = ["#e11d48", "#f8fafc", "#2f6bff"],
-  apronColor = "#0b0e16",
+  theme = THEMES.raw,
   bodies,
   onRopeHit,
 }: {
-  ropeColors?: string[];
-  apronColor?: string;
+  theme?: Theme;
   /** Wrestler positions; when given, the ropes react to them. */
   bodies?: () => { x: number; z: number }[];
   onRopeHit?: (power: number) => void;
 }) {
   const h = RING.half;
+  const tex = useBrandTextures(theme);
+  const ropeColors = theme.ropes;
   const corners: [number, number][] = [
     [-h, -h],
     [h, -h],
     [h, h],
     [-h, h],
   ];
+  const side = h * 2 + 0.6;
+  const apronH = RING.matY - 0.08;
+  const padGeo = useMemo(() => new RoundedBoxGeometry(0.24, 0.26, 0.24, 3, 0.06), []);
+  useEffect(() => () => padGeo.dispose(), [padGeo]);
   return (
     <group>
-      {/* mat */}
+      {/* mat: canvas top with logo, padded edge */}
       <mesh position={[0, RING.matY - 0.05, 0]} receiveShadow>
-        <boxGeometry args={[h * 2 + 0.6, 0.1, h * 2 + 0.6]} />
-        <meshStandardMaterial color="#d9dde6" roughness={0.9} />
+        <boxGeometry args={[side, 0.1, side]} />
+        {[0, 1, 2, 3, 4, 5].map((i) =>
+          i === 2 ? <meshStandardMaterial key={i} attach={`material-${i}`} map={tex?.mat ?? null} color="#ffffff" roughness={0.88} /> : <meshStandardMaterial key={i} attach={`material-${i}`} color={theme.apron} roughness={0.7} />,
+        )}
       </mesh>
-      {/* center logo ring */}
-      <mesh position={[0, RING.matY + 0.002, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[1.0, 1.15, 48]} />
-        <meshStandardMaterial color="#9aa1b2" roughness={0.9} />
-      </mesh>
-      {/* apron skirt */}
+      {/* apron: dark core plus a printed skirt on every side */}
       <mesh position={[0, RING.matY / 2 - 0.05, 0]} castShadow receiveShadow>
-        <boxGeometry args={[h * 2 + 0.6, RING.matY - 0.1, h * 2 + 0.6]} />
-        <meshStandardMaterial color={apronColor} roughness={0.7} />
+        <boxGeometry args={[side - 0.02, apronH, side - 0.02]} />
+        <meshStandardMaterial color={theme.apron} roughness={0.8} />
       </mesh>
       {[0, 1, 2, 3].map((i) => (
-        <mesh key={i} position={[0, RING.matY * 0.55, 0]} rotation={[0, (i * Math.PI) / 2, 0]}>
-          <boxGeometry args={[h * 2 + 0.62, 0.08, h * 2 + 0.62]} />
-          <meshStandardMaterial color={i % 2 ? "#2f6bff" : "#e11d48"} emissive={i % 2 ? "#1d3fa8" : "#8a0f2b"} emissiveIntensity={0.6} />
+        <mesh key={i} rotation={[0, (i * Math.PI) / 2, 0]} position={[Math.sin((i * Math.PI) / 2) * (side / 2 + 0.002), RING.matY / 2 - 0.05, Math.cos((i * Math.PI) / 2) * (side / 2 + 0.002)]} receiveShadow>
+          <planeGeometry args={[side, apronH]} />
+          <meshStandardMaterial map={tex?.apron ?? null} color="#ffffff" roughness={0.75} />
         </mesh>
       ))}
-      {/* posts and turnbuckles */}
+      {/* LED strip under the ring edge */}
+      {[0, 1, 2, 3].map((i) => (
+        <mesh key={i} position={[0, 0.06, 0]} rotation={[0, (i * Math.PI) / 2, 0]}>
+          <boxGeometry args={[side + 0.02, 0.05, side + 0.02]} />
+          <meshStandardMaterial color={theme.led} emissive={theme.led} emissiveIntensity={0.9} />
+        </mesh>
+      ))}
+      {/* posts and padded turnbuckles */}
       {corners.map(([x, z], i) => (
         <group key={i} position={[x, 0, z]}>
           <mesh position={[0, (RING.matY + 1.45) / 2, 0]} castShadow>
-            <cylinderGeometry args={[0.07, 0.07, RING.matY + 1.45, 10]} />
-            <meshStandardMaterial color="#9ca3af" metalness={0.8} roughness={0.3} />
+            <cylinderGeometry args={[0.07, 0.07, RING.matY + 1.45, 12]} />
+            <meshStandardMaterial color="#9ca3af" metalness={0.85} roughness={0.25} />
           </mesh>
           {RING.ropeHeights.map((ry) => (
-            <mesh key={ry} position={[-Math.sign(x) * 0.08, RING.matY + ry, -Math.sign(z) * 0.08]} castShadow>
-              <boxGeometry args={[0.2, 0.22, 0.2]} />
-              <meshStandardMaterial color={i % 2 ? "#2f6bff" : "#e11d48"} roughness={0.5} />
+            <mesh key={ry} geometry={padGeo} position={[-Math.sign(x) * 0.09, RING.matY + ry, -Math.sign(z) * 0.09]} rotation={[0, Math.atan2(-x, -z), 0]} castShadow>
+              <meshStandardMaterial map={tex?.pad ?? null} color="#ffffff" roughness={0.45} />
             </mesh>
           ))}
         </group>
@@ -179,15 +207,19 @@ export function Ring({
       ) : (
         RING.ropeHeights.map((ry, ri) => corners.map((c, i) => <Rope key={`${ri}-${i}`} from={c} to={corners[(i + 1) % 4]} y={RING.matY + ry} color={ropeColors[ri % ropeColors.length]} />))
       )}
-      {/* steps */}
+      {/* steel steps */}
       {[
         [h + 0.9, -h + 0.6],
         [-h - 0.9, h - 0.6],
       ].map(([x, z], i) => (
-        <mesh key={i} position={[x, 0.45, z]} castShadow>
-          <boxGeometry args={[0.9, 0.9, 1.2]} />
-          <meshStandardMaterial color="#4b5563" metalness={0.6} roughness={0.4} />
-        </mesh>
+        <group key={i} position={[x, 0, z]}>
+          {[0, 1, 2].map((k) => (
+            <mesh key={k} position={[0, 0.15 + k * 0.3, -0.3 + k * 0.3]} castShadow receiveShadow>
+              <boxGeometry args={[0.9, 0.3, 1.2 - k * 0.3]} />
+              <meshStandardMaterial color="#6b7280" metalness={0.75} roughness={0.35} />
+            </mesh>
+          ))}
+        </group>
       ))}
     </group>
   );
@@ -255,7 +287,8 @@ export function Crowd({ heat = 0.5, count = 1400 }: { heat?: number | (() => num
   );
 }
 
-export function ArenaShell({ heat = 0.5, crowdCount = 1400 }: { heat?: number | (() => number); crowdCount?: number }) {
+export function ArenaShell({ heat = 0.5, crowdCount = 1400, theme = THEMES.raw }: { heat?: number | (() => number); crowdCount?: number; theme?: Theme }) {
+  const tex = useBrandTextures(theme);
   return (
     <group>
       {/* floor */}
@@ -272,7 +305,7 @@ export function ArenaShell({ heat = 0.5, crowdCount = 1400 }: { heat?: number | 
       {[0, 1, 2, 3].map((i) => (
         <mesh key={i} position={[Math.sin((i * Math.PI) / 2) * 6.6, 0.55, Math.cos((i * Math.PI) / 2) * 6.6]} rotation={[0, (i * Math.PI) / 2, 0]}>
           <boxGeometry args={[13.2, 1.1, 0.12]} />
-          <meshStandardMaterial color="#111827" metalness={0.5} roughness={0.5} />
+          <meshStandardMaterial color="#ffffff" map={tex?.board ?? null} emissive="#ffffff" emissiveMap={tex?.board ?? null} emissiveIntensity={0.55} roughness={0.5} />
         </mesh>
       ))}
       {/* entrance stage with big screen */}
@@ -283,11 +316,11 @@ export function ArenaShell({ heat = 0.5, crowdCount = 1400 }: { heat?: number | 
         </mesh>
         <mesh position={[0, 5.5, -1.6]}>
           <boxGeometry args={[12, 7, 0.3]} />
-          <meshStandardMaterial color="#0f172a" emissive="#1e3a8a" emissiveIntensity={0.5} />
+          <meshStandardMaterial color="#0b0b0f" emissive={theme.ledDim} emissiveIntensity={0.4} />
         </mesh>
         <mesh position={[0, 5.5, -1.4]}>
           <planeGeometry args={[11, 6.2]} />
-          <meshBasicMaterial color="#1b1f3b" />
+          <meshBasicMaterial color="#ffffff" map={tex?.screen ?? null} toneMapped={false} />
         </mesh>
         {/* ramp */}
         <mesh position={[0, 0.3, 6]} receiveShadow>

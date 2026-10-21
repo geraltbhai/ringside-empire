@@ -173,12 +173,37 @@ function useCustomPortrait(id: string) {
   return peek;
 }
 
-/** Portrait with fallback chain: uploaded image → manifest file → procedural art. */
+/** A headshot rendered from the wrestler's 3D model (loaded lazily; null until ready or without WebGL). */
+function use3dPortrait(w: Wrestler, enabled: boolean) {
+  const [shot, setShot] = useState<{ key: string; url: string } | null>(null);
+  const key = `${w.id}|${w.brand}|${w.heightIn}|${JSON.stringify(w.appearance)}`;
+  useEffect(() => {
+    if (!enabled) return;
+    let live = true;
+    // debounce so dragging a look slider doesn't queue a render per tick
+    const timer = setTimeout(() => {
+      import("@/components/match3d/portraitRenderer").then(async (m) => {
+        const url = await m.requestPortrait(w);
+        if (live && url) setShot({ key, url });
+      });
+    }, 250);
+    return () => {
+      live = false;
+      clearTimeout(timer);
+    };
+    // the key captures everything the render depends on
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, enabled]);
+  return shot && shot.key === key ? shot.url : null;
+}
+
+/** Portrait with fallback chain: uploaded image → manifest file → 3D headshot → procedural art. */
 export function Portrait({ w, className, rounded = "rounded-md" }: { w: Wrestler; className?: string; rounded?: string }) {
   const custom = useCustomPortrait(w.id);
   const manifest = PORTRAIT_MANIFEST[w.id] ?? (w.baseId ? PORTRAIT_MANIFEST[w.baseId] : undefined);
   const [failed, setFailed] = useState<string | null>(null);
-  const src = custom || manifest;
+  const shot = use3dPortrait(w, !custom && !manifest);
+  const src = custom || manifest || shot;
   const showImage = src && failed !== src;
   return (
     <div className={cn("relative aspect-[5/6] overflow-hidden bg-canvas-2", rounded, className)}>

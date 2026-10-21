@@ -9,7 +9,8 @@ import { Portrait } from "@/components/Portrait";
 import { Badge, Button, EmptyState, Field, PageHeader, Panel, Tabs } from "@/components/ui/primitives";
 import { useAction } from "@/components/WeekControls";
 import type { CameraPreset } from "@/components/match3d/CharacterStage";
-import type { Appearance, Wrestler } from "@/engine/types";
+import { faceFor } from "@/engine/appearance";
+import type { Appearance, FaceShape, TattooSpot, Wrestler } from "@/engine/types";
 import { restoreLook, updateWrestler } from "@/engine/universe";
 import { cn, heightLabel } from "@/lib/cn";
 import { useUniverse } from "@/store/game";
@@ -92,6 +93,30 @@ function Choice<T extends string>({ value, options, onChange, label }: { value: 
   );
 }
 
+const FACE_SLIDERS: [keyof FaceShape, string, string, string][] = [
+  ["jaw", "Jaw", "Narrow", "Square"],
+  ["chin", "Chin", "Soft", "Strong"],
+  ["brow", "Brow", "Flat", "Heavy"],
+  ["nose", "Nose", "Small", "Big"],
+  ["cheeks", "Cheekbones", "Soft", "High"],
+  ["width", "Face width", "Narrow", "Broad"],
+  ["length", "Face length", "Short", "Long"],
+];
+const TATTOO_LABELS: [TattooSpot, string][] = [
+  ["sleeveL", "Left sleeve"],
+  ["sleeveR", "Right sleeve"],
+  ["upperL", "Left upper arm"],
+  ["upperR", "Right upper arm"],
+  ["tribalL", "Tribal left"],
+  ["tribalR", "Tribal right"],
+  ["chest", "Chest"],
+  ["back", "Back"],
+  ["torso", "Full torso"],
+  ["neck", "Neck"],
+  ["hands", "Hands"],
+  ["legs", "Legs"],
+];
+
 export default function LookEditorPage() {
   const { id } = useParams<{ id: string }>();
   const u = useUniverse();
@@ -119,6 +144,7 @@ export default function LookEditorPage() {
   const preview: Wrestler = { ...original, appearance: look, heightIn, weightLbs };
   const set = <K extends keyof Appearance>(k: K, v: Appearance[K]) => setLook((x) => (x ? { ...x, [k]: v } : x));
   const pct = (k: keyof Appearance) => Math.round((look[k] as number) * 100);
+  const face = faceFor(id, look);
   const setPct = (k: keyof Appearance) => (v: number) => set(k, (v / 100) as never);
   const accent = original.brand === "fury" ? "#2f6bff" : original.brand === "mayhem" ? "#e11d48" : "#d9a520";
   const hasOriginal = !!u.defaults[id]?.appearance;
@@ -264,6 +290,23 @@ export default function LookEditorPage() {
                 <label className="flex items-center gap-2 text-sm">
                   <input type="checkbox" checked={look.mask} onChange={(e) => set("mask", e.target.checked)} /> Wears a mask (uses gear and trim colours)
                 </label>
+                <Choice
+                  label="Face paint"
+                  value={look.facePaint ?? "none"}
+                  onChange={(v) => set("facePaint", v)}
+                  options={[
+                    { v: "none", l: "None" },
+                    { v: "warrior", l: "Warrior" },
+                    { v: "crow", l: "Crow" },
+                    { v: "skull", l: "Half skull" },
+                    { v: "demon", l: "Demon" },
+                  ]}
+                />
+                <div className="grid gap-x-4 sm:grid-cols-2">
+                  {FACE_SLIDERS.map(([k, label, left, right]) => (
+                    <Slider key={k} label={label} value={Math.round(face[k] * 100)} onChange={(v) => set("face", { ...look.face, [k]: v / 100 })} left={left} right={right} />
+                  ))}
+                </div>
               </div>
             </Panel>
           )}
@@ -301,7 +344,27 @@ export default function LookEditorPage() {
                   <label className="flex items-center gap-2">
                     <input type="checkbox" checked={look.wristTape} onChange={(e) => set("wristTape", e.target.checked)} /> Taped wrists
                   </label>
+                  <label className="flex items-center gap-2">
+                    <input type="checkbox" checked={!!look.gloves} onChange={(e) => set("gloves", e.target.checked)} /> MMA gloves
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input type="checkbox" checked={!!look.elbowPads} onChange={(e) => set("elbowPads", e.target.checked)} /> Elbow pads
+                  </label>
                 </div>
+                <Field label="Tattoos">
+                  <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+                    {TATTOO_LABELS.map(([spot, label]) => (
+                      <label key={spot} className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={(look.tattoos ?? []).includes(spot)}
+                          onChange={(e) => set("tattoos", e.target.checked ? [...(look.tattoos ?? []), spot] : (look.tattoos ?? []).filter((t) => t !== spot))}
+                        />
+                        {label}
+                      </label>
+                    ))}
+                  </div>
+                </Field>
               </div>
             </Panel>
           )}

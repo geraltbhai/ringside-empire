@@ -3,7 +3,7 @@
  * so a wrestler's body is always derived the same way from style, size and age.
  */
 import { hashString } from "./rng";
-import type { Appearance, Division, WrestlingStyle } from "./types";
+import type { Appearance, Division, FaceShape, WrestlingStyle } from "./types";
 
 export type BodyFields = Pick<Appearance, "muscle" | "definition" | "bodyFat" | "shoulderWidth" | "armSize" | "legSize" | "bootColor" | "kneepads" | "wristTape">;
 
@@ -49,3 +49,21 @@ export function defaultBuild(input: { id: string; style: WrestlingStyle; divisio
     wristTape: (h >>> 7) % 2 === 0,
   };
 }
+
+/** Face shape: explicit values win, the rest come from a hash so everyone looks different. */
+export function faceFor(id: string, a: Appearance): FaceShape {
+  const h = hashString(`${id}:face`);
+  const r = (shift: number) => ((h >>> shift) % 1000) / 1000;
+  const heavy = a.bulk * 0.5 + a.bodyFat * 0.3;
+  return {
+    jaw: 0.35 + r(1) * 0.4 + heavy * 0.25,
+    chin: 0.25 + r(5) * 0.6,
+    brow: 0.3 + r(9) * 0.5 + a.muscle * 0.1,
+    nose: 0.3 + r(13) * 0.5,
+    cheeks: 0.3 + r(17) * 0.5,
+    width: 0.35 + r(21) * 0.35 + heavy * 0.25,
+    length: 0.3 + r(25) * 0.45,
+    ...a.face,
+  };
+}
+

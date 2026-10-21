@@ -124,7 +124,27 @@ export interface Appearance {
   bootColor: string;
   kneepads: boolean;
   wristTape: boolean;
+  /** Face shape, each 0..1 with 0.5 neutral. Missing values are derived from the wrestler id. */
+  face?: Partial<FaceShape>;
+  /** Tattoo placements, e.g. "sleeveR", "tribalL", "chest", "back", "neck". */
+  tattoos?: TattooSpot[];
+  gloves?: boolean;
+  elbowPads?: boolean;
+  facePaint?: "none" | "warrior" | "crow" | "skull" | "demon";
 }
+
+export interface FaceShape {
+  jaw: number;
+  chin: number;
+  brow: number;
+  nose: number;
+  cheeks: number;
+  width: number;
+  length: number;
+}
+
+export const TATTOO_SPOTS = ["sleeveL", "sleeveR", "upperL", "upperR", "tribalL", "tribalR", "chest", "back", "neck", "torso", "legs", "hands"] as const;
+export type TattooSpot = (typeof TATTOO_SPOTS)[number];
 
 export const APPEARANCE_BODY_KEYS = ["muscle", "definition", "bodyFat", "shoulderWidth", "armSize", "legSize", "bulk"] as const;
 

@@ -10,6 +10,11 @@ ring to play matches yourself.
 > with their men's rosters, plus **Legends & Icons** (some with several eras) and a few free agents: 134
 > wrestlers in all. Every rating is a subjective gameplay estimate. Names only, no logos, music or artwork.
 > Edit the roster in `src/data/roster-source.ts`, then run `npm run roster`.
+>
+> **3D wrestlers.** Every wrestler is the same CC0 rigged base mesh (`public/models/base-male.glb`, with full
+> finger bones), smoothed and sculpted per wrestler (build, face shape, gear volume) and painted in a shader
+> (skin, ring gear, boots, pads, gloves, tattoos, masks, face paint). Knockdowns and slams use Rapier ragdolls;
+> grapples use arm IK. Portraits are rendered from the 3D model. Tweak anyone in the Character Studio.
 
 ---
 

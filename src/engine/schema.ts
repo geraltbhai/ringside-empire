@@ -5,7 +5,7 @@
 import { z } from "zod";
 import { DEFAULT_SETTINGS, ROSTER_WRESTLERS, SCHEMA_VERSION } from "../data/seed";
 import { defaultBuild } from "./appearance";
-import { ATTRIBUTE_KEYS, type Universe } from "./types";
+import { ATTRIBUTE_KEYS, TATTOO_SPOTS, type Universe } from "./types";
 
 const score = z.number().min(0).max(100);
 const attributes = z.object(Object.fromEntries(ATTRIBUTE_KEYS.map((k) => [k, z.number().min(1).max(100)])) as Record<(typeof ATTRIBUTE_KEYS)[number], z.ZodNumber>);
@@ -66,6 +66,11 @@ export const wrestlerSchema = z.object({
     bootColor: z.string(),
     kneepads: z.boolean(),
     wristTape: z.boolean(),
+    face: z.object({ jaw: z.number(), chin: z.number(), brow: z.number(), nose: z.number(), cheeks: z.number(), width: z.number(), length: z.number() }).partial().optional(),
+    tattoos: z.array(z.enum(TATTOO_SPOTS)).optional(),
+    gloves: z.boolean().optional(),
+    elbowPads: z.boolean().optional(),
+    facePaint: z.enum(["none", "warrior", "crow", "skull", "demon"]).optional(),
   }),
   trend: z.enum(["rising", "peak", "declining"]),
   isCustom: z.boolean(),

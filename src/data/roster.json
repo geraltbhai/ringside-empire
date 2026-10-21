@@ -84,7 +84,15 @@
     "legSize": 0.46,
     "bootColor": "#f5f5f4",
     "kneepads": false,
-    "wristTape": true
+    "wristTape": true,
+    "tattoos": [
+     "upperL"
+    ],
+    "face": {
+     "jaw": 0.7,
+     "chin": 0.7,
+     "length": 0.6
+    }
    },
    "trend": "declining",
    "isCustom": false,
@@ -174,7 +182,15 @@
     "legSize": 0.41,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "tattoos": [
+     "tribalR"
+    ],
+    "face": {
+     "jaw": 0.8,
+     "brow": 0.7,
+     "width": 0.6
+    }
    },
    "trend": "declining",
    "isCustom": false,
@@ -264,7 +280,15 @@
     "legSize": 0.46,
     "bootColor": "#f5f5f4",
     "kneepads": false,
-    "wristTape": false
+    "wristTape": false,
+    "tattoos": [
+     "upperR"
+    ],
+    "elbowPads": true,
+    "face": {
+     "jaw": 0.55,
+     "cheeks": 0.7
+    }
    },
    "trend": "declining",
    "isCustom": false,
@@ -354,7 +378,17 @@
     "legSize": 0.55,
     "bootColor": "#111318",
     "kneepads": false,
-    "wristTape": true
+    "wristTape": true,
+    "tattoos": [
+     "sleeveL",
+     "sleeveR",
+     "chest"
+    ],
+    "face": {
+     "jaw": 0.5,
+     "chin": 0.6,
+     "length": 0.6
+    }
    },
    "trend": "declining",
    "isCustom": false,
@@ -444,7 +478,12 @@
     "legSize": 0.65,
     "bootColor": "#f5f5f4",
     "kneepads": false,
-    "wristTape": true
+    "wristTape": true,
+    "face": {
+     "jaw": 0.75,
+     "width": 0.7,
+     "brow": 0.6
+    }
    },
    "trend": "declining",
    "isCustom": false,
@@ -534,7 +573,15 @@
     "legSize": 0.41,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "tattoos": [
+     "sleeveR"
+    ],
+    "face": {
+     "jaw": 0.75,
+     "brow": 0.7,
+     "length": 0.65
+    }
    },
    "trend": "declining",
    "isCustom": false,
@@ -624,7 +671,17 @@
     "legSize": 0.5,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "tattoos": [
+     "upperL",
+     "upperR",
+     "back"
+    ],
+    "face": {
+     "jaw": 0.55,
+     "length": 0.7,
+     "cheeks": 0.7
+    }
    },
    "trend": "declining",
    "isCustom": false,
@@ -714,7 +771,17 @@
     "legSize": 0.56,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "tattoos": [
+     "chest",
+     "back"
+    ],
+    "gloves": true,
+    "face": {
+     "jaw": 0.85,
+     "width": 0.75,
+     "brow": 0.8
+    }
    },
    "trend": "declining",
    "isCustom": false,
@@ -804,7 +871,11 @@
     "legSize": 0.44,
     "bootColor": "#7f1d1d",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "face": {
+     "jaw": 0.7,
+     "chin": 0.65
+    }
    },
    "trend": "declining",
    "isCustom": false,
@@ -894,7 +965,13 @@
     "legSize": 0.4,
     "bootColor": "#7f1d1d",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "tattoos": [
+     "tribalL",
+     "tribalR",
+     "legs"
+    ],
+    "elbowPads": true
    },
    "trend": "declining",
    "isCustom": false,
@@ -984,7 +1061,13 @@
     "legSize": 0.5,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "tattoos": [
+     "tribalL",
+     "tribalR",
+     "legs"
+    ],
+    "elbowPads": true
    },
    "trend": "declining",
    "isCustom": false,
@@ -1074,7 +1157,15 @@
     "legSize": 0.5,
     "bootColor": "#7f1d1d",
     "kneepads": false,
-    "wristTape": false
+    "wristTape": false,
+    "tattoos": [
+     "tribalL",
+     "chest"
+    ],
+    "face": {
+     "jaw": 0.75,
+     "width": 0.7
+    }
    },
    "trend": "peak",
    "isCustom": false,
@@ -1164,7 +1255,17 @@
     "legSize": 0.42,
     "bootColor": "#7f1d1d",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "tattoos": [
+     "sleeveL",
+     "sleeveR",
+     "neck",
+     "torso"
+    ],
+    "face": {
+     "jaw": 0.8,
+     "width": 0.8
+    }
    },
    "trend": "peak",
    "isCustom": false,
@@ -1254,7 +1355,11 @@
     "legSize": 0.44,
     "bootColor": "#f5f5f4",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "face": {
+     "jaw": 0.5,
+     "nose": 0.7
+    }
    },
    "trend": "declining",
    "isCustom": false,
@@ -1344,7 +1449,11 @@
     "legSize": 0.48,
     "bootColor": "#7f1d1d",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "face": {
+     "jaw": 0.6,
+     "width": 0.75
+    }
    },
    "trend": "declining",
    "isCustom": false,
@@ -1434,7 +1543,11 @@
     "legSize": 0.41,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "face": {
+     "jaw": 0.8,
+     "brow": 0.7
+    }
    },
    "trend": "peak",
    "isCustom": false,
@@ -1524,7 +1637,13 @@
     "legSize": 0.56,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "tattoos": [
+     "upperL"
+    ],
+    "face": {
+     "width": 0.8
+    }
    },
    "trend": "declining",
    "isCustom": false,
@@ -1614,7 +1733,11 @@
     "legSize": 0.56,
     "bootColor": "#7f1d1d",
     "kneepads": false,
-    "wristTape": false
+    "wristTape": false,
+    "face": {
+     "jaw": 0.75,
+     "chin": 0.7
+    }
    },
    "trend": "peak",
    "isCustom": false,
@@ -1704,7 +1827,12 @@
     "legSize": 0.47,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "tattoos": [
+     "neck",
+     "upperR"
+    ],
+    "gloves": true
    },
    "trend": "peak",
    "isCustom": false,
@@ -1794,7 +1922,11 @@
     "legSize": 0.51,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "tattoos": [
+     "upperL"
+    ],
+    "elbowPads": true
    },
    "trend": "declining",
    "isCustom": false,
@@ -1974,7 +2106,14 @@
     "legSize": 0.56,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "tattoos": [
+     "sleeveL",
+     "sleeveR",
+     "neck",
+     "chest",
+     "hands"
+    ]
    },
    "trend": "declining",
    "isCustom": false,
@@ -2064,7 +2203,12 @@
     "legSize": 0.55,
     "bootColor": "#7f1d1d",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "tattoos": [
+     "sleeveL",
+     "sleeveR"
+    ],
+    "gloves": true
    },
    "trend": "declining",
    "isCustom": false,
@@ -2154,7 +2298,13 @@
     "legSize": 0.46,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "tattoos": [
+     "sleeveL",
+     "sleeveR",
+     "chest",
+     "back"
+    ]
    },
    "trend": "declining",
    "isCustom": false,
@@ -2424,7 +2574,11 @@
     "legSize": 0.44,
     "bootColor": "#7f1d1d",
     "kneepads": false,
-    "wristTape": false
+    "wristTape": false,
+    "face": {
+     "jaw": 0.6,
+     "chin": 0.6
+    }
    },
    "trend": "declining",
    "isCustom": false,
@@ -2514,7 +2668,18 @@
     "legSize": 0.43,
     "bootColor": "#f5f5f4",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "tattoos": [
+     "upperL",
+     "upperR",
+     "back"
+    ],
+    "elbowPads": true,
+    "face": {
+     "jaw": 0.7,
+     "brow": 0.8,
+     "length": 0.7
+    }
    },
    "trend": "declining",
    "isCustom": false,
@@ -2604,7 +2769,11 @@
     "legSize": 0.51,
     "bootColor": "#f5f5f4",
     "kneepads": false,
-    "wristTape": true
+    "wristTape": true,
+    "face": {
+     "cheeks": 0.8,
+     "length": 0.6
+    }
    },
    "trend": "declining",
    "isCustom": false,
@@ -2694,7 +2863,10 @@
     "legSize": 0.43,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "tattoos": [
+     "upperL"
+    ]
    },
    "trend": "declining",
    "isCustom": false,
@@ -2784,7 +2956,16 @@
     "legSize": 0.48,
     "bootColor": "#111318",
     "kneepads": false,
-    "wristTape": true
+    "wristTape": true,
+    "tattoos": [
+     "sleeveL",
+     "sleeveR",
+     "chest",
+     "back",
+     "neck",
+     "hands",
+     "legs"
+    ]
    },
    "trend": "declining",
    "isCustom": false,
@@ -2874,7 +3055,11 @@
     "legSize": 0.57,
     "bootColor": "#111318",
     "kneepads": false,
-    "wristTape": false
+    "wristTape": false,
+    "face": {
+     "jaw": 0.6,
+     "width": 0.6
+    }
    },
    "trend": "declining",
    "isCustom": false,
@@ -2964,7 +3149,12 @@
     "legSize": 0.6,
     "bootColor": "#111318",
     "kneepads": false,
-    "wristTape": true
+    "wristTape": true,
+    "face": {
+     "jaw": 0.8,
+     "width": 0.7,
+     "brow": 0.7
+    }
    },
    "trend": "rising",
    "isCustom": false,
@@ -3054,7 +3244,10 @@
     "legSize": 0.52,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "tattoos": [
+     "upperR"
+    ]
    },
    "trend": "peak",
    "isCustom": false,
@@ -3144,7 +3337,10 @@
     "legSize": 0.65,
     "bootColor": "#f5f5f4",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "tattoos": [
+     "upperL"
+    ]
    },
    "trend": "peak",
    "isCustom": false,
@@ -3324,7 +3520,11 @@
     "legSize": 0.51,
     "bootColor": "#f5f5f4",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "tattoos": [
+     "sleeveL",
+     "sleeveR"
+    ]
    },
    "trend": "declining",
    "isCustom": false,
@@ -3594,7 +3794,11 @@
     "legSize": 0.6,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "tattoos": [
+     "upperL",
+     "chest"
+    ]
    },
    "trend": "peak",
    "isCustom": false,
@@ -3774,7 +3978,11 @@
     "legSize": 0.44,
     "bootColor": "#f5f5f4",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "tattoos": [
+     "upperR"
+    ],
+    "elbowPads": true
    },
    "trend": "declining",
    "isCustom": false,
@@ -3864,7 +4072,11 @@
     "legSize": 0.44,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "tattoos": [
+     "upperL",
+     "upperR"
+    ]
    },
    "trend": "declining",
    "isCustom": false,
@@ -3954,7 +4166,11 @@
     "legSize": 0.51,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "tattoos": [
+     "tribalL",
+     "tribalR"
+    ]
    },
    "trend": "declining",
    "isCustom": false,
@@ -4044,7 +4260,11 @@
     "legSize": 0.5,
     "bootColor": "#7f1d1d",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "tattoos": [
+     "tribalL",
+     "tribalR"
+    ]
    },
    "trend": "declining",
    "isCustom": false,
@@ -4314,7 +4534,11 @@
     "legSize": 0.56,
     "bootColor": "#f5f5f4",
     "kneepads": false,
-    "wristTape": true
+    "wristTape": true,
+    "face": {
+     "jaw": 0.6,
+     "length": 0.65
+    }
    },
    "trend": "peak",
    "isCustom": false,
@@ -4404,7 +4628,12 @@
     "legSize": 0.55,
     "bootColor": "#f5f5f4",
     "kneepads": false,
-    "wristTape": true
+    "wristTape": true,
+    "face": {
+     "jaw": 0.5,
+     "chin": 0.65,
+     "nose": 0.65
+    }
    },
    "trend": "peak",
    "isCustom": false,
@@ -4494,7 +4723,11 @@
     "legSize": 0.53,
     "bootColor": "#7f1d1d",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "face": {
+     "cheeks": 0.75,
+     "length": 0.6
+    }
    },
    "trend": "declining",
    "isCustom": false,
@@ -4584,7 +4817,10 @@
     "legSize": 0.65,
     "bootColor": "#111318",
     "kneepads": false,
-    "wristTape": false
+    "wristTape": false,
+    "tattoos": [
+     "upperR"
+    ]
    },
    "trend": "peak",
    "isCustom": false,
@@ -4674,7 +4910,13 @@
     "legSize": 0.48,
     "bootColor": "#7f1d1d",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "tattoos": [
+     "sleeveL",
+     "sleeveR",
+     "neck",
+     "chest"
+    ]
    },
    "trend": "peak",
    "isCustom": false,
@@ -4764,7 +5006,16 @@
     "legSize": 0.56,
     "bootColor": "#111318",
     "kneepads": false,
-    "wristTape": true
+    "wristTape": true,
+    "tattoos": [
+     "sleeveL",
+     "upperR",
+     "chest"
+    ],
+    "face": {
+     "jaw": 0.65,
+     "brow": 0.7
+    }
    },
    "trend": "declining",
    "isCustom": false,
@@ -4854,7 +5105,16 @@
     "legSize": 0.58,
     "bootColor": "#f5f5f4",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "tattoos": [
+     "sleeveL",
+     "sleeveR",
+     "chest",
+     "torso",
+     "neck",
+     "legs"
+    ],
+    "facePaint": "skull"
    },
    "trend": "peak",
    "isCustom": false,
@@ -4944,7 +5204,10 @@
     "legSize": 0.53,
     "bootColor": "#7f1d1d",
     "kneepads": false,
-    "wristTape": true
+    "wristTape": true,
+    "tattoos": [
+     "upperL"
+    ]
    },
    "trend": "declining",
    "isCustom": false,
@@ -5304,7 +5567,11 @@
     "legSize": 0.5,
     "bootColor": "#7f1d1d",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "tattoos": [
+     "sleeveR",
+     "chest"
+    ]
    },
    "trend": "declining",
    "isCustom": false,
@@ -5484,7 +5751,17 @@
     "legSize": 0.55,
     "bootColor": "#f5f5f4",
     "kneepads": false,
-    "wristTape": false
+    "wristTape": false,
+    "tattoos": [
+     "tribalL",
+     "tribalR",
+     "back"
+    ],
+    "elbowPads": true,
+    "face": {
+     "width": 0.85,
+     "jaw": 0.85
+    }
    },
    "trend": "declining",
    "isCustom": false,
@@ -5574,7 +5851,11 @@
     "legSize": 0.46,
     "bootColor": "#7f1d1d",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "tattoos": [
+     "upperL",
+     "upperR"
+    ]
    },
    "trend": "peak",
    "isCustom": false,
@@ -5754,7 +6035,14 @@
     "legSize": 0.41,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "tattoos": [
+     "upperR"
+    ],
+    "face": {
+     "jaw": 0.6,
+     "length": 0.7
+    }
    },
    "trend": "declining",
    "isCustom": false,
@@ -5934,7 +6222,11 @@
     "legSize": 0.42,
     "bootColor": "#f5f5f4",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "tattoos": [
+     "upperL",
+     "upperR"
+    ]
    },
    "trend": "declining",
    "isCustom": false,
@@ -6024,7 +6316,11 @@
     "legSize": 0.43,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "face": {
+     "jaw": 0.75,
+     "length": 0.7
+    }
    },
    "trend": "declining",
    "isCustom": false,
@@ -6384,7 +6680,10 @@
     "legSize": 0.51,
     "bootColor": "#f5f5f4",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "tattoos": [
+     "upperL"
+    ]
    },
    "trend": "declining",
    "isCustom": false,
@@ -6474,7 +6773,10 @@
     "legSize": 0.6,
     "bootColor": "#7f1d1d",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "tattoos": [
+     "upperR"
+    ]
    },
    "trend": "declining",
    "isCustom": false,
@@ -6564,7 +6866,11 @@
     "legSize": 0.46,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "tattoos": [
+     "sleeveR"
+    ],
+    "elbowPads": true
    },
    "trend": "declining",
    "isCustom": false,
@@ -6744,7 +7050,16 @@
     "legSize": 0.41,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "tattoos": [
+     "sleeveL",
+     "sleeveR",
+     "chest",
+     "torso",
+     "neck",
+     "hands",
+     "legs"
+    ]
    },
    "trend": "declining",
    "isCustom": false,
@@ -6924,7 +7239,11 @@
     "legSize": 0.54,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "face": {
+     "jaw": 0.75,
+     "width": 0.7
+    }
    },
    "trend": "declining",
    "isCustom": false,
@@ -7554,7 +7873,11 @@
     "legSize": 0.54,
     "bootColor": "#f5f5f4",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "tattoos": [
+     "upperL",
+     "upperR"
+    ]
    },
    "trend": "peak",
    "isCustom": false,
@@ -7644,7 +7967,10 @@
     "legSize": 0.54,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "tattoos": [
+     "sleeveL"
+    ]
    },
    "trend": "declining",
    "isCustom": false,
@@ -7734,7 +8060,10 @@
     "legSize": 0.55,
     "bootColor": "#f5f5f4",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "tattoos": [
+     "upperR"
+    ]
    },
    "trend": "declining",
    "isCustom": false,
@@ -7824,7 +8153,12 @@
     "legSize": 0.42,
     "bootColor": "#111318",
     "kneepads": false,
-    "wristTape": true
+    "wristTape": true,
+    "tattoos": [
+     "sleeveL",
+     "sleeveR"
+    ],
+    "gloves": true
    },
    "trend": "declining",
    "isCustom": false,
@@ -8004,7 +8338,18 @@
     "legSize": 0.5,
     "bootColor": "#7f1d1d",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "tattoos": [
+     "sleeveL",
+     "sleeveR",
+     "chest"
+    ],
+    "gloves": true,
+    "face": {
+     "jaw": 0.7,
+     "length": 0.8,
+     "brow": 0.8
+    }
    },
    "trend": "peak",
    "isCustom": false,
@@ -8094,7 +8439,14 @@
     "legSize": 0.44,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "tattoos": [
+     "legs"
+    ],
+    "face": {
+     "jaw": 0.7,
+     "brow": 0.75
+    }
    },
    "trend": "peak",
    "isCustom": false,
@@ -8184,7 +8536,15 @@
     "legSize": 0.42,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "tattoos": [
+     "tribalL"
+    ],
+    "face": {
+     "jaw": 0.8,
+     "brow": 0.85,
+     "width": 0.65
+    }
    },
    "trend": "peak",
    "isCustom": false,
@@ -8274,7 +8634,12 @@
     "legSize": 0.49,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "face": {
+     "jaw": 0.75,
+     "nose": 0.8,
+     "length": 0.75
+    }
    },
    "trend": "peak",
    "isCustom": false,
@@ -8634,7 +8999,15 @@
     "legSize": 0.55,
     "bootColor": "#f5f5f4",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "tattoos": [
+     "tribalL"
+    ],
+    "gloves": true,
+    "face": {
+     "jaw": 0.85,
+     "width": 0.75
+    }
    },
    "trend": "peak",
    "isCustom": false,
@@ -8724,7 +9097,8 @@
     "legSize": 0.59,
     "bootColor": "#f5f5f4",
     "kneepads": false,
-    "wristTape": true
+    "wristTape": true,
+    "facePaint": "crow"
    },
    "trend": "declining",
    "isCustom": false,
@@ -9264,7 +9638,11 @@
     "legSize": 0.56,
     "bootColor": "#f5f5f4",
     "kneepads": false,
-    "wristTape": false
+    "wristTape": false,
+    "tattoos": [
+     "back",
+     "torso"
+    ]
    },
    "trend": "declining",
    "isCustom": false,
@@ -9354,7 +9732,13 @@
     "legSize": 0.57,
     "bootColor": "#7f1d1d",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "tattoos": [
+     "sleeveL",
+     "sleeveR",
+     "torso",
+     "back"
+    ]
    },
    "trend": "declining",
    "isCustom": false,
@@ -9444,7 +9828,12 @@
     "legSize": 0.6,
     "bootColor": "#111318",
     "kneepads": false,
-    "wristTape": true
+    "wristTape": true,
+    "tattoos": [
+     "sleeveL",
+     "sleeveR",
+     "chest"
+    ]
    },
    "trend": "peak",
    "isCustom": false,
@@ -9534,7 +9923,10 @@
     "legSize": 0.43,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "tattoos": [
+     "upperR"
+    ]
    },
    "trend": "peak",
    "isCustom": false,
@@ -9804,7 +10196,13 @@
     "legSize": 0.56,
     "bootColor": "#7f1d1d",
     "kneepads": false,
-    "wristTape": false
+    "wristTape": false,
+    "tattoos": [
+     "sleeveL",
+     "sleeveR",
+     "chest"
+    ],
+    "facePaint": "demon"
    },
    "trend": "peak",
    "isCustom": false,
@@ -10074,7 +10472,13 @@
     "legSize": 0.6,
     "bootColor": "#111318",
     "kneepads": false,
-    "wristTape": false
+    "wristTape": false,
+    "tattoos": [
+     "upperL"
+    ],
+    "face": {
+     "jaw": 0.6
+    }
    },
    "trend": "declining",
    "isCustom": false,
@@ -10254,7 +10658,13 @@
     "legSize": 0.44,
     "bootColor": "#111318",
     "kneepads": false,
-    "wristTape": false
+    "wristTape": false,
+    "tattoos": [
+     "sleeveL",
+     "sleeveR",
+     "chest"
+    ],
+    "gloves": true
    },
    "trend": "declining",
    "isCustom": false,
@@ -10524,7 +10934,11 @@
     "legSize": 0.55,
     "bootColor": "#f5f5f4",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "face": {
+     "nose": 0.75,
+     "jaw": 0.7
+    }
    },
    "trend": "peak",
    "isCustom": false,
@@ -10614,7 +11028,11 @@
     "legSize": 0.53,
     "bootColor": "#f5f5f4",
     "kneepads": false,
-    "wristTape": true
+    "wristTape": true,
+    "face": {
+     "nose": 0.7,
+     "chin": 0.65
+    }
    },
    "trend": "declining",
    "isCustom": false,
@@ -10794,7 +11212,8 @@
     "legSize": 0.46,
     "bootColor": "#111318",
     "kneepads": false,
-    "wristTape": true
+    "wristTape": true,
+    "facePaint": "warrior"
    },
    "trend": "peak",
    "isCustom": false,
@@ -10884,7 +11303,13 @@
     "legSize": 0.56,
     "bootColor": "#7f1d1d",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "face": {
+     "width": 0.95,
+     "jaw": 0.9,
+     "nose": 0.9,
+     "length": 0.8
+    }
    },
    "trend": "declining",
    "isCustom": false,
@@ -11334,7 +11759,11 @@
     "legSize": 0.43,
     "bootColor": "#7f1d1d",
     "kneepads": false,
-    "wristTape": false
+    "wristTape": false,
+    "face": {
+     "width": 0.95,
+     "jaw": 0.85
+    }
    },
    "trend": "rising",
    "isCustom": false,
@@ -11514,7 +11943,12 @@
     "legSize": 0.56,
     "bootColor": "#f5f5f4",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "tattoos": [
+     "upperL",
+     "upperR",
+     "chest"
+    ]
    },
    "trend": "declining",
    "isCustom": false,
@@ -11604,7 +12038,10 @@
     "legSize": 0.42,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "face": {
+     "width": 0.85
+    }
    },
    "trend": "declining",
    "isCustom": false,
@@ -11694,7 +12131,14 @@
     "legSize": 0.5,
     "bootColor": "#111318",
     "kneepads": false,
-    "wristTape": false
+    "wristTape": false,
+    "tattoos": [
+     "sleeveL",
+     "sleeveR",
+     "neck",
+     "chest",
+     "back"
+    ]
    },
    "trend": "declining",
    "isCustom": false,
@@ -11784,7 +12228,10 @@
     "legSize": 0.48,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "tattoos": [
+     "upperL"
+    ]
    },
    "trend": "declining",
    "isCustom": false,
@@ -11964,7 +12411,10 @@
     "legSize": 0.49,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "tattoos": [
+     "sleeveL"
+    ]
    },
    "trend": "declining",
    "isCustom": false,

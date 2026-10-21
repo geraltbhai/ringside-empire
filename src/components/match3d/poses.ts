@@ -216,8 +216,3 @@ export function poseFor(anim: string, t: number): Pose {
       return p(STANCE);
   }
 }
-
-export function blendPose(current: Pose, target: Pose, k: number) {
-  for (const key of Object.keys(target) as (keyof Pose)[]) current[key] += (target[key] - current[key]) * k;
-  return current;
-}
