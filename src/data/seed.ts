@@ -71,6 +71,7 @@ export const DEFAULT_SETTINGS: Settings = {
   autoRenewContracts: true,
   maxMatchesPerMonth: 6,
   soundEnabled: true,
+  graphics: "high",
   reducedMotion: false,
 };
 

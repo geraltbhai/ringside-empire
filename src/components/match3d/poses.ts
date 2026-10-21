@@ -186,6 +186,21 @@ export function poseFor(anim: string, t: number): Pose {
     }
     case "defeat":
       return p({ rootY: -1.02, rootTilt: -1.5, lShoulderSide: 1.5, rShoulderSide: 1.5, head: 0.2 });
+    case "lifted":
+      // Defender during a suplex / powerbomb / finisher: hoisted, then horizontal at the peak.
+      return keys(t, [
+        [0, { spine: 0.5, lShoulder: 1.4, rShoulder: 1.4, lElbow: 0.6, rElbow: 0.6 }],
+        [0.25, { rootY: 0.25, rootTilt: -0.7, spine: 0.2, lShoulderSide: 0.9, rShoulderSide: 0.9, lHip: 0.6, rHip: 0.4, lKnee: 0.8, rKnee: 0.5 }],
+        [0.45, { rootY: 0.5, rootTilt: -1.55, lShoulderSide: 1.3, rShoulderSide: 1.3, lHip: 0.3, rHip: 0.2, lKnee: 0.4, rKnee: 0.2 }],
+      ]);
+    case "ref-count": {
+      // Kneeling; the arm rises and slaps the mat once per count (t resets every count).
+      const k = Math.min(1, t / 0.85);
+      const arm = k < 0.75 ? 2.6 * (k / 0.75) : 2.6 * (1 - (k - 0.75) / 0.25);
+      return p({ rootY: -0.42, spine: 1.0, head: -0.4, lHip: 1.5, rHip: 1.2, lKnee: 2.3, rKnee: 1.9, rShoulder: Math.max(0.3, arm), rElbow: 0.2, lShoulder: 0.9, lElbow: 1.0, lShoulderSide: 0.3 });
+    }
+    case "ref-watch":
+      return p({ spine: 0.45, head: -0.2, lHip: 0.5, rHip: 0.5, lKnee: 0.8, rKnee: 0.8, rootY: -0.12, lShoulder: 0.4, rShoulder: 0.4, lElbow: 1.2, rElbow: 1.2 });
     case "flex": {
       // double biceps, with a little pulse
       const pulse = Math.max(0, Math.sin(t * 2.2)) * 0.12;

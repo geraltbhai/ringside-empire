@@ -92,7 +92,7 @@ export function Ring({ ropeColors = ["#e11d48", "#f8fafc", "#2f6bff"], apronColo
 }
 
 /** Instanced crowd: thousands of simple figures that bob when the crowd is hot. */
-export function Crowd({ heat = 0.5, count = 1400 }: { heat?: number; count?: number }) {
+export function Crowd({ heat = 0.5, count = 1400 }: { heat?: number | (() => number); count?: number }) {
   const ref = useRef<THREE.InstancedMesh>(null);
   const seats = useMemo(() => {
     const out: { x: number; y: number; z: number; phase: number; color: THREE.Color }[] = [];
@@ -127,8 +127,9 @@ export function Crowd({ heat = 0.5, count = 1400 }: { heat?: number; count?: num
     const mesh = ref.current;
     if (!mesh) return;
     const t = clock.elapsedTime;
+    const h = typeof heat === "function" ? heat() : heat;
     seats.forEach((p, i) => {
-      const bob = Math.max(0, Math.sin(t * (3 + heat * 5) + p.phase)) * 0.18 * heat;
+      const bob = Math.max(0, Math.sin(t * (3 + h * 5) + p.phase)) * 0.18 * h;
       dummy.position.set(p.x, p.y + bob, p.z);
       dummy.lookAt(0, p.y, 0);
       dummy.updateMatrix();
@@ -152,7 +153,7 @@ export function Crowd({ heat = 0.5, count = 1400 }: { heat?: number; count?: num
   );
 }
 
-export function ArenaShell({ heat = 0.5, crowdCount = 1400 }: { heat?: number; crowdCount?: number }) {
+export function ArenaShell({ heat = 0.5, crowdCount = 1400 }: { heat?: number | (() => number); crowdCount?: number }) {
   return (
     <group>
       {/* floor */}

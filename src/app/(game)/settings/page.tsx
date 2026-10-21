@@ -315,6 +315,12 @@ export default function SettingsPage() {
             <Field label={`Playable match time limit: ${s.matchMinutes} minutes (real time)`}>
               <input type="range" min={3} max={20} value={s.matchMinutes} className="w-full" onChange={(e) => run((d) => void (d.settings.matchMinutes = Number(e.target.value)))} />
             </Field>
+            <Field label="Graphics quality">
+              <select className="h-10 w-full rounded-md border border-rope bg-arena px-2 text-sm" value={s.graphics ?? "high"} onChange={(e) => run((d) => void (d.settings.graphics = e.target.value as "high" | "low"), "Graphics updated")}>
+                <option value="high">High — shadows, full crowd</option>
+                <option value="low">Low — faster on older laptops</option>
+              </select>
+            </Field>
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={s.soundEnabled} onChange={(e) => run((d) => void (d.settings.soundEnabled = e.target.checked))} /> Sound effects
             </label>

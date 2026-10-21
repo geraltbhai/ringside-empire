@@ -98,12 +98,26 @@ from CHECKPOINT.md", and it will pick up at **Next up** below.
 - `/roster/[id]/look` character studio (orbit, presets, turntable, poses, body/face/gear tabs, original-look reset).
 - Save schema v2 + migration (`src/engine/schema.ts`), default physiques in `src/engine/appearance.ts`. Tests: 14 passing.
 
-### Phase 4 — Playable 3D match ⏳
+### Phase 4 — Playable 3D match ✅
+- `/match`: quick match setup (any two wrestlers in a division, optional title defence when both are signed,
+  tale of the tape) and booked matches via `/match?show=…&seg=…` ("Play this match" on a show card; choose your side).
+- `src/components/match/LiveMatch.tsx`: renderer-independent game loop (fixed ≤50 ms sub-steps), keyboard controls
+  from Settings (arrows always work), touch pad on phones, intro (tale of the tape), HUD (health, stamina, momentum,
+  SIG/FIN), reversal prompt, lock-up prompt, referee count, kick-out / escape mash meters, move feed, pause menu
+  (resume / restart / leave), results (method, time, stars, stats) and recording:
+  quick match → `recordExhibition` (history, records, popularity, title changes); booked → `segment.playedResult`.
+- `MatchScene.tsx`: arena, sculpted wrestlers, referee (counts kneeling, watches from the far side), carried
+  defender during lifts, victory → flex, hit sparks, camera shake (respects reduced motion), hard-camera tracking.
+- `TopDownView.tsx`: 2D fallback if WebGL is missing or the 3D scene crashes — the match stays playable.
+- `src/lib/sfx.ts`: synthesised hits, bell, mat slaps, crowd bed that follows crowd heat (Settings toggle).
+- Settings: graphics quality (low = no shadows, thinner crowd, dpr 1).
+- Verified with a bot that plays through the real keyboard controls (scratch `bot.py`): quick match won by pinfall
+  and recorded in history; booked match played, locked in and used when the show ran ("Played" badge).
+- Not done: playable tag / battle royal (tag matches are simulated; documented).
 ### Phase 5–6 — Polish, tests, deploy ⏳
 
 ## Next up (resume here)
-Phase 4: playable match page `/match` — the engine (`src/engine/live-match.ts`), poses and the sculpted wrestler
-model already exist; needs the R3F match scene, camera, HUD, keyboard controls, pause, result screen and wiring
-into the universe (`recordExhibition` for quick matches, `segment.playedResult` for "Play this match" from booking).
+Phase 5–6: README with setup + Vercel deployment, production build check, Playwright e2e smoke test,
+accessibility / mobile pass, final QA checklist against the brief.
 
 Tests: 39 passing (rating 8, save/migration 4, physiques 2, simulation 6, booking 9, finance/universe/contracts 10).

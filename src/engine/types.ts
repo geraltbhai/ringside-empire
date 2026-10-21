@@ -438,6 +438,8 @@ export interface Settings {
   autoRenewContracts: boolean;
   maxMatchesPerMonth: number;
   soundEnabled: boolean;
+  /** "low" turns off shadows, lowers resolution and thins the crowd for weaker machines. */
+  graphics: "high" | "low";
   reducedMotion: boolean;
 }
 

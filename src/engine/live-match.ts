@@ -185,7 +185,7 @@ export function createMatch(player: Wrestler, opponent: Wrestler, opts: { timeLi
     time: 0,
     timeLimit: opts.timeLimitSec,
     fighters: [makeFighter(player, true, -1.6), makeFighter(opponent, false, 1.6)],
-    referee: { x: 0, z: 1.8, counting: false, count: 0, countTime: 0 },
+    referee: { x: 0, z: -1.8, counting: false, count: 0, countTime: 0 },
     pin: null,
     over: false,
     winner: null,
@@ -701,7 +701,8 @@ export function stepMatch(state: MatchState, playerInput: MatchInput, dt: number
   // Referee drifts to a good viewing spot.
   const mx = (p.x + o.x) / 2;
   const mz = (p.z + o.z) / 2;
-  const target = state.pin ? { x: state.fighters[state.pin.defender].x - 0.2, z: state.fighters[state.pin.defender].z + 0.9 } : { x: clamp(mx + 1.6, -2.7, 2.7), z: clamp(mz + 1.6, -2.7, 2.7) };
+  // Pins: kneel beside the pinned wrestler. Otherwise watch from the far side so the hard camera has a clear view.
+  const target = state.pin ? { x: state.fighters[state.pin.defender].x - 0.2, z: state.fighters[state.pin.defender].z - 0.9 } : { x: clamp(mx + 1.2, -2.7, 2.7), z: clamp(mz - 1.6, -2.7, 2.7) };
   state.referee.x += (target.x - state.referee.x) * Math.min(1, dt * 2);
   state.referee.z += (target.z - state.referee.z) * Math.min(1, dt * 2);
 
