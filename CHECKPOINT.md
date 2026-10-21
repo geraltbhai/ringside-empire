@@ -114,10 +114,19 @@ from CHECKPOINT.md", and it will pick up at **Next up** below.
 - Verified with a bot that plays through the real keyboard controls (scratch `bot.py`): quick match won by pinfall
   and recorded in history; booked match played, locked in and used when the show ran ("Played" badge).
 - Not done: playable tag / battle royal (tag matches are simulated; documented).
-### Phase 5–6 — Polish, tests, deploy ⏳
+### Phase 5–6 — Polish, tests, deploy ✅
+- ESLint clean (Next.js + React Compiler rules); HUD renders from immutable snapshots; 3D view memoised.
+- Autosave hardened: leading-edge write, debounce for bursts, localStorage recovery copy on unload.
+- Themed 404 and error pages; 2D-mode note; phone-width fixes; low-graphics option.
+- Playwright e2e (`e2e/smoke.spec.ts`, desktop + mobile), Supabase seed script, README with Vercel steps.
+- Final verification against the production build: typecheck, lint, 39 unit tests, 7 e2e tests, every route
+  rendered without errors, WebGL-disabled fallback playable.
 
 ## Next up (resume here)
-Phase 5–6: README with setup + Vercel deployment, production build check, Playwright e2e smoke test,
-accessibility / mobile pass, final QA checklist against the brief.
+The brief is complete. Good candidates for a next round:
+1. Playable tag-team matches (tag in/out, partner AI on the apron) — engine currently handles 1v1.
+2. Entrance sequences per wrestler (walk down the ramp, themed lighting) before the bell.
+3. More moves per wrestler (move-set editor: pick animations for signatures/finisher).
+4. Draft/PLE presentation polish: event posters, a weekly news digest page.
 
 Tests: 39 passing (rating 8, save/migration 4, physiques 2, simulation 6, booking 9, finance/universe/contracts 10).
