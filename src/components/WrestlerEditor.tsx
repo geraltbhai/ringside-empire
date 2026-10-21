@@ -169,7 +169,6 @@ export function WrestlerEditor({
             <Field label="Division">
               <select className={selectClass} value={w.division} onChange={(e) => set("division", e.target.value as Wrestler["division"])} disabled={!isNew}>
                 <option value="men">Men</option>
-                <option value="women">Women</option>
               </select>
             </Field>
             <Field label="Style">

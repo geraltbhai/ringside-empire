@@ -27,7 +27,107 @@ function Rope({ from, to, y, color }: { from: [number, number]; to: [number, num
   );
 }
 
-export function Ring({ ropeColors = ["#e11d48", "#f8fafc", "#2f6bff"], apronColor = "#0b0e16" }: { ropeColors?: string[]; apronColor?: string }) {
+/**
+ * Ropes as spring-loaded polylines: each side bends at the point nearest a
+ * wrestler leaning on it, and keeps wobbling after they bounce off.
+ */
+const ROPE_UP = new THREE.Vector3(0, 1, 0);
+function DynamicRopes({ colors, bodies, onHit }: { colors: string[]; bodies: () => { x: number; z: number }[]; onHit?: (power: number) => void }) {
+  const h = RING.half;
+  const sides = useMemo(
+    () =>
+      [0, 1, 2, 3].map((i) => {
+        // side i: outward normal and the axis it runs along
+        const normal = [new THREE.Vector2(0, 1), new THREE.Vector2(1, 0), new THREE.Vector2(0, -1), new THREE.Vector2(-1, 0)][i];
+        const along = new THREE.Vector2(-normal.y, normal.x);
+        return { normal, along, ropes: RING.ropeHeights.map(() => ({ disp: 0, vel: 0, at: 0 })), touching: false };
+      }),
+    [],
+  );
+  const segs = useRef<(THREE.Mesh | null)[]>([]);
+  const last = useRef<{ x: number; z: number }[]>([]);
+  const a = useMemo(() => new THREE.Vector3(), []);
+  const b = useMemo(() => new THREE.Vector3(), []);
+  const dir = useMemo(() => new THREE.Vector3(), []);
+  useFrame((_, rawDt) => {
+    const dt = Math.min(rawDt, 1 / 30);
+    const list = bodies();
+    sides.forEach((side, si) => {
+      // deepest wrestler on this side, and how fast they were moving into it
+      let push = 0;
+      let at = 0;
+      let speed = 0;
+      list.forEach((p, i) => {
+        const out = p.x * side.normal.x + p.z * side.normal.y;
+        const pen = out - (h - 0.45);
+        if (pen > push) {
+          push = pen;
+          at = Math.max(-h + 0.4, Math.min(h - 0.4, p.x * side.along.x + p.z * side.along.y));
+          const q = last.current[i];
+          if (q) speed = Math.max(0, (out - (q.x * side.normal.x + q.z * side.normal.y)) / dt);
+        }
+      });
+      const touching = push > 0;
+      side.ropes.forEach((rope, ri) => {
+        const give = ri === 0 ? 0.35 : ri === 1 ? 0.75 : 0.6;
+        const target = Math.min(0.3, push * give * 0.5);
+        if (touching) rope.at += (at - rope.at) * Math.min(1, dt * 12);
+        // momentum of a wrestler hitting the ropes stretches them past the rest point
+        if (touching && !side.touching) rope.vel += speed * give * 0.45;
+        rope.vel += ((target - rope.disp) * 520 - rope.vel * (touching ? 22 : 6)) * dt;
+        rope.disp += rope.vel * dt;
+        // two segments: corner → kink → corner
+        const y = RING.matY + RING.ropeHeights[ri];
+        const kx = side.normal.x * (h + rope.disp) + side.along.x * rope.at;
+        const kz = side.normal.y * (h + rope.disp) + side.along.y * rope.at;
+        for (let k = 0; k < 2; k++) {
+          const end = k === 0 ? -h : h;
+          const cx = side.normal.x * h + side.along.x * end;
+          const cz = side.normal.y * h + side.along.y * end;
+          const mesh = segs.current[(si * 3 + ri) * 2 + k];
+          if (!mesh) continue;
+          a.set(cx, y, cz);
+          b.set(kx, y, kz);
+          dir.subVectors(b, a);
+          const len = dir.length();
+          mesh.position.addVectors(a, b).multiplyScalar(0.5);
+          mesh.quaternion.setFromUnitVectors(ROPE_UP, dir.normalize());
+          mesh.scale.set(1, len, 1);
+        }
+      });
+      if (touching && !side.touching && speed > 0.8 && onHit) onHit(Math.min(1, speed / 6));
+      side.touching = touching;
+    });
+    last.current = list.map((p) => ({ x: p.x, z: p.z }));
+  });
+  return (
+    <group>
+      {sides.flatMap((_, si) =>
+        RING.ropeHeights.flatMap((__, ri) =>
+          [0, 1].map((k) => (
+            <mesh key={`${si}-${ri}-${k}`} ref={(m) => void (segs.current[(si * 3 + ri) * 2 + k] = m)} castShadow>
+              <cylinderGeometry args={[0.035, 0.035, 1, 8]} />
+              <meshStandardMaterial color={colors[ri % colors.length]} roughness={0.45} />
+            </mesh>
+          )),
+        ),
+      )}
+    </group>
+  );
+}
+
+export function Ring({
+  ropeColors = ["#e11d48", "#f8fafc", "#2f6bff"],
+  apronColor = "#0b0e16",
+  bodies,
+  onRopeHit,
+}: {
+  ropeColors?: string[];
+  apronColor?: string;
+  /** Wrestler positions; when given, the ropes react to them. */
+  bodies?: () => { x: number; z: number }[];
+  onRopeHit?: (power: number) => void;
+}) {
   const h = RING.half;
   const corners: [number, number][] = [
     [-h, -h],
@@ -74,8 +174,10 @@ export function Ring({ ropeColors = ["#e11d48", "#f8fafc", "#2f6bff"], apronColo
         </group>
       ))}
       {/* ropes */}
-      {RING.ropeHeights.map((ry, ri) =>
-        corners.map((c, i) => <Rope key={`${ri}-${i}`} from={c} to={corners[(i + 1) % 4]} y={RING.matY + ry} color={ropeColors[ri % ropeColors.length]} />),
+      {bodies ? (
+        <DynamicRopes colors={ropeColors} bodies={bodies} onHit={onRopeHit} />
+      ) : (
+        RING.ropeHeights.map((ry, ri) => corners.map((c, i) => <Rope key={`${ri}-${i}`} from={c} to={corners[(i + 1) % 4]} y={RING.matY + ry} color={ropeColors[ri % ropeColors.length]} />))
       )}
       {/* steps */}
       {[

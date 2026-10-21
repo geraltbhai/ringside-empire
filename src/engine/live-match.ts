@@ -6,7 +6,7 @@
 import { clamp, createRng, type Rng } from "./rng";
 import type { Wrestler } from "./types";
 
-export const RING_LIMIT = 2.65;
+export const RING_LIMIT = 2.8;
 const MIN_SEPARATION = 0.75;
 /** Tuned so an evenly matched bout lasts a few minutes. */
 const DAMAGE_SCALE = 0.45;
@@ -125,7 +125,7 @@ export interface MatchState {
 const DIFFICULTY = { easy: 0.6, normal: 1, hard: 1.45 } as const;
 
 export function buildMoves(w: Pick<Wrestler, "finisher" | "signatures" | "style">) {
-  const submission = /lock|clutch|hold|crossface|stretch|thesis|permafrost|trap|wheel/i.test(w.finisher);
+  const submission = /lock|clutch|hold|crossface|stretch|trap|wheel|sharpshooter|walls of|accolade|redrum|m[ií]stica|armbar|jacket|claw|leglock|bro to sleep|choke|vise|stf|recliner/i.test(w.finisher);
   const strikerish = w.style === "striker" || w.style === "brawler";
   const moves: Record<MoveKind, MoveDef> = {
     light: { kind: "light", name: strikerish ? "Jab combo" : "Forearm", startup: 0.13, active: 0.1, recovery: 0.22, range: 1.15, damage: 3.2, stamina: 4, reversalWindow: 0.12, knockdown: false, stun: 0.32, momentum: 3, attr: "striking" },

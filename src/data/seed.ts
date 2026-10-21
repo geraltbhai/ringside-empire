@@ -17,9 +17,9 @@ export const ROSTER_WRESTLERS = roster.wrestlers as unknown as Wrestler[];
 export const ROSTER_TEAMS = roster.teams as unknown as { id: string; name: string; members: [string, string]; brand: BrandId; chemistry: number }[];
 
 export const BRANDS: Record<BrandId, Brand> = {
-  mayhem: { id: "mayhem", name: "Mayhem", showName: "Monday Mayhem", color: "#e11d48", popularity: 68, reputation: 66, showDayOffset: 0, weeklyBudget: 450_000, history: [], bookable: true },
-  fury: { id: "fury", name: "Fury", showName: "Friday Fury", color: "#2563eb", popularity: 66, reputation: 67, showDayOffset: 4, weeklyBudget: 450_000, history: [], bookable: true },
-  legends: { id: "legends", name: "Legends", showName: "Legends", color: "#d4a017", popularity: 80, reputation: 85, showDayOffset: 6, weeklyBudget: 0, history: [], bookable: false },
+  mayhem: { id: "mayhem", name: "WWE", showName: "Monday Night Raw", color: "#e11d48", popularity: 68, reputation: 66, showDayOffset: 0, weeklyBudget: 450_000, history: [], bookable: true },
+  fury: { id: "fury", name: "AEW", showName: "AEW Dynamite", color: "#c9a227", popularity: 66, reputation: 67, showDayOffset: 4, weeklyBudget: 450_000, history: [], bookable: true },
+  legends: { id: "legends", name: "Legends & Icons", showName: "Legends & Icons", color: "#d4a017", popularity: 80, reputation: 85, showDayOffset: 6, weeklyBudget: 0, history: [], bookable: false },
   "free-agents": { id: "free-agents", name: "Free Agents", showName: "Free Agency", color: "#71717a", popularity: 0, reputation: 0, showDayOffset: 6, weeklyBudget: 0, history: [], bookable: false },
 };
 
@@ -80,49 +80,55 @@ type TitleSeed = Omit<Championship, "reigns" | "holderIds"> & {
 };
 
 const TITLE_SEEDS: TitleSeed[] = [
-  { id: "apex-world", name: "Apex World Heavyweight Championship", shortName: "World Heavyweight", brand: "mayhem", tier: "world", division: "men", isTag: false, prestige: 90, reigns: [
-    { holderIds: ["marcus-vale"], startWeek: -64, endWeek: -22, defenses: 9 },
-    { holderIds: ["drago-kessler"], startWeek: -22, endWeek: null, defenses: 4 },
+  { id: "wwe-undisputed", name: "Undisputed WWE Championship", shortName: "Undisputed WWE", brand: "mayhem", tier: "world", division: "men", isTag: false, prestige: 95, reigns: [
+    { holderIds: ["roman-reigns"], startWeek: -190, endWeek: -80, defenses: 24 },
+    { holderIds: ["cody-rhodes"], startWeek: -80, endWeek: -28, defenses: 12 },
+    { holderIds: ["john-cena-2025"], startWeek: -28, endWeek: -12, defenses: 2 },
+    { holderIds: ["cody-rhodes"], startWeek: -12, endWeek: null, defenses: 3 },
   ] },
-  { id: "mayhem-crown", name: "Mayhem Crown Championship", shortName: "Crown", brand: "mayhem", tier: "midcard", division: "men", isTag: false, prestige: 72, reigns: [
-    { holderIds: ["theo-blackwood"], startWeek: -30, endWeek: -12, defenses: 3 },
-    { holderIds: ["elias-crowe"], startWeek: -12, endWeek: null, defenses: 2 },
+  { id: "wwe-world-heavyweight", name: "World Heavyweight Championship", shortName: "World Heavyweight", brand: "mayhem", tier: "world", division: "men", isTag: false, prestige: 90, reigns: [
+    { holderIds: ["gunther"], startWeek: -60, endWeek: -24, defenses: 8 },
+    { holderIds: ["seth-rollins"], startWeek: -24, endWeek: -10, defenses: 2 },
+    { holderIds: ["cm-punk"], startWeek: -10, endWeek: null, defenses: 2 },
   ] },
-  { id: "mayhem-womens", name: "Mayhem Women's Championship", shortName: "Mayhem Women's", brand: "mayhem", tier: "womens-world", division: "women", isTag: false, prestige: 84, reigns: [
-    { holderIds: ["valentina-cruz"], startWeek: -26, endWeek: null, defenses: 5 },
+  { id: "wwe-intercontinental", name: "Intercontinental Championship", shortName: "Intercontinental", brand: "mayhem", tier: "midcard", division: "men", isTag: false, prestige: 78, reigns: [
+    { holderIds: ["dominik-mysterio"], startWeek: -34, endWeek: null, defenses: 7 },
   ] },
-  { id: "mayhem-tag", name: "Mayhem Tag Team Championship", shortName: "Mayhem Tag", brand: "mayhem", tier: "tag", division: "men", isTag: true, prestige: 68, reigns: [
-    { holderIds: ["cain-hollow", "abel-hollow"], startWeek: -9, endWeek: null, defenses: 1 },
+  { id: "wwe-united-states", name: "United States Championship", shortName: "United States", brand: "mayhem", tier: "midcard", division: "men", isTag: false, prestige: 74, reigns: [
+    { holderIds: ["solo-sikoa"], startWeek: -20, endWeek: -6, defenses: 3 },
+    { holderIds: ["sami-zayn"], startWeek: -6, endWeek: null, defenses: 1 },
   ] },
-  { id: "fury-undisputed", name: "Undisputed Fury Championship", shortName: "Undisputed", brand: "fury", tier: "world", division: "men", isTag: false, prestige: 92, reigns: [
-    { holderIds: ["cole-maddox"], startWeek: -80, endWeek: -40, defenses: 6 },
-    { holderIds: ["solomon-reyes"], startWeek: -40, endWeek: null, defenses: 11 },
+  { id: "wwe-tag", name: "World Tag Team Championship", shortName: "WWE Tag", brand: "mayhem", tier: "tag", division: "men", isTag: true, prestige: 70, reigns: [
+    { holderIds: ["finn-balor", "jd-mcdonagh"], startWeek: -9, endWeek: null, defenses: 2 },
   ] },
-  { id: "fury-national", name: "Fury National Championship", shortName: "National", brand: "fury", tier: "midcard", division: "men", isTag: false, prestige: 75, reigns: [
-    { holderIds: ["viktor-rask"], startWeek: -34, endWeek: null, defenses: 8 },
+  { id: "aew-world", name: "AEW World Championship", shortName: "AEW World", brand: "fury", tier: "world", division: "men", isTag: false, prestige: 92, reigns: [
+    { holderIds: ["jon-moxley"], startWeek: -50, endWeek: -14, defenses: 7 },
+    { holderIds: ["hangman-page"], startWeek: -14, endWeek: null, defenses: 3 },
   ] },
-  { id: "fury-womens", name: "Fury Women's Championship", shortName: "Fury Women's", brand: "fury", tier: "womens-world", division: "women", isTag: false, prestige: 85, reigns: [
-    { holderIds: ["aaliyah-grant"], startWeek: -40, endWeek: -15, defenses: 4 },
-    { holderIds: ["rae-mercer"], startWeek: -15, endWeek: null, defenses: 2 },
+  { id: "aew-tnt", name: "AEW TNT Championship", shortName: "TNT", brand: "fury", tier: "midcard", division: "men", isTag: false, prestige: 76, reigns: [
+    { holderIds: ["adam-cole"], startWeek: -30, endWeek: -12, defenses: 3 },
+    { holderIds: ["kyle-fletcher"], startWeek: -12, endWeek: null, defenses: 3 },
   ] },
-  { id: "fury-tag", name: "Fury Tag Team Championship", shortName: "Fury Tag", brand: "fury", tier: "tag", division: "men", isTag: true, prestige: 70, reigns: [
-    { holderIds: ["rex-wolfe", "ryder-wolfe"], startWeek: -14, endWeek: null, defenses: 2 },
+  { id: "aew-international", name: "AEW International Championship", shortName: "International", brand: "fury", tier: "midcard", division: "men", isTag: false, prestige: 78, reigns: [
+    { holderIds: ["konosuke-takeshita"], startWeek: -26, endWeek: null, defenses: 6 },
   ] },
-  { id: "womens-tag", name: "Women's Tag Team Championship", shortName: "Women's Tag", brand: "shared", tier: "womens-tag", division: "women", isTag: true, prestige: 62, reigns: [
-    { holderIds: ["ivy-calder", "tess-monroe"], startWeek: -6, endWeek: null, defenses: 0 },
+  { id: "aew-tag", name: "AEW World Tag Team Championship", shortName: "AEW Tag", brand: "fury", tier: "tag", division: "men", isTag: true, prestige: 74, reigns: [
+    { holderIds: ["brody-king", "bandido"], startWeek: -16, endWeek: null, defenses: 4 },
   ] },
 ];
 
 type RivalrySeed = Pick<Rivalry, "id" | "sideA" | "sideB" | "brand" | "intensity" | "fanInterest" | "stage" | "payoff" | "titleId" | "origin">;
 
 const RIVALRY_SEEDS: RivalrySeed[] = [
-  { id: "riv-vale-kessler", sideA: ["marcus-vale"], sideB: ["drago-kessler"], brand: "mayhem", intensity: 62, fanInterest: 70, stage: 1, payoff: "title-match", titleId: "apex-world", origin: "Kessler ended Vale's 42-week reign with a low blow the referee never saw." },
-  { id: "riv-maddox-reyes", sideA: ["cole-maddox"], sideB: ["solomon-reyes"], brand: "fury", intensity: 74, fanInterest: 80, stage: 2, payoff: "title-match", titleId: "fury-undisputed", origin: "Maddox has never won back the title Reyes took from him 40 weeks ago." },
-  { id: "riv-harlow-cruz", sideA: ["skye-harlow"], sideB: ["valentina-cruz"], brand: "mayhem", intensity: 40, fanInterest: 58, stage: 0, payoff: "title-match", titleId: "mayhem-womens", origin: "Harlow pinned La Reina in a non-title tag match." },
-  { id: "riv-grant-mercer", sideA: ["aaliyah-grant"], sideB: ["rae-mercer"], brand: "fury", intensity: 55, fanInterest: 66, stage: 1, payoff: "title-match", titleId: "fury-womens", origin: "Mercer ended Grant's reign and then attacked her in the post-match." },
-  { id: "riv-rourke-crowe", sideA: ["jax-rourke"], sideB: ["elias-crowe"], brand: "mayhem", intensity: 48, fanInterest: 60, stage: 1, payoff: "grudge-match", titleId: null, origin: "Crowe cost Rourke a title shot with a chair shot behind the referee." },
-  { id: "riv-kingsley-rask", sideA: ["ash-kingsley"], sideB: ["viktor-rask"], brand: "fury", intensity: 35, fanInterest: 52, stage: 0, payoff: "title-match", titleId: "fury-national", origin: "Rask called the Prodigy 'a highlight reel, not a wrestler'." },
-  { id: "riv-skyhigh-hollows", sideA: ["ty-okafor", "lucas-rey"], sideB: ["cain-hollow", "abel-hollow"], brand: "mayhem", intensity: 38, fanInterest: 48, stage: 0, payoff: "tag-showdown", titleId: "mayhem-tag", origin: "The Hollows ambushed Sky High during their entrance." },
+  { id: "riv-cody-drew", sideA: ["drew-mcintyre"], sideB: ["cody-rhodes"], brand: "mayhem", intensity: 62, fanInterest: 74, stage: 1, payoff: "title-match", titleId: "wwe-undisputed", origin: "McIntyre calls Cody a fraud champion every week, and says he'll prove it." },
+  { id: "riv-punk-rollins", sideA: ["cm-punk"], sideB: ["seth-rollins"], brand: "mayhem", intensity: 78, fanInterest: 86, stage: 2, payoff: "title-match", titleId: "wwe-world-heavyweight", origin: "Rollins says Punk only holds the title because he was hurt. Punk says that's what happens to the guy who never earns it." },
+  { id: "riv-jey-solo", sideA: ["jey-uso"], sideB: ["solo-sikoa"], brand: "mayhem", intensity: 55, fanInterest: 70, stage: 1, payoff: "grudge-match", titleId: null, origin: "Solo cost Jey his main-event shot with a Samoan Spike behind the referee's back." },
+  { id: "riv-reigns-breakker", sideA: ["roman-reigns"], sideB: ["bron-breakker"], brand: "mayhem", intensity: 46, fanInterest: 68, stage: 0, payoff: "grudge-match", titleId: null, origin: "Breakker speared the OTC through the barricade on his way back to the ring." },
+  { id: "riv-usos-judgment", sideA: ["jey-uso", "jimmy-uso"], sideB: ["finn-balor", "jd-mcdonagh"], brand: "mayhem", intensity: 38, fanInterest: 55, stage: 0, payoff: "tag-showdown", titleId: "wwe-tag", origin: "The Judgment Day jumped the Usos during their entrance." },
+  { id: "riv-hangman-mjf", sideA: ["hangman-page"], sideB: ["mjf"], brand: "fury", intensity: 66, fanInterest: 80, stage: 1, payoff: "title-match", titleId: "aew-world", origin: "MJF says the cowboy is keeping his title warm for him." },
+  { id: "riv-ospreay-fletcher", sideA: ["will-ospreay"], sideB: ["kyle-fletcher"], brand: "fury", intensity: 60, fanInterest: 72, stage: 1, payoff: "title-match", titleId: "aew-tnt", origin: "Former tag partners, now the bitterest rivalry in the company." },
+  { id: "riv-darby-moxley", sideA: ["darby-allin"], sideB: ["jon-moxley"], brand: "fury", intensity: 58, fanInterest: 70, stage: 1, payoff: "grudge-match", titleId: null, origin: "The Death Riders left Darby laid out on the ramp." },
+  { id: "riv-ftr-bucks", sideA: ["dax-harwood", "cash-wheeler"], sideB: ["matt-jackson", "nick-jackson"], brand: "fury", intensity: 50, fanInterest: 66, stage: 0, payoff: "tag-showdown", titleId: null, origin: "Who is the greatest tag team of the decade? Neither will let it go." },
 ];
 
 function teamName(ids: string[], wrestlers: Record<string, Wrestler>, teams: Record<string, Team>) {
@@ -201,7 +207,7 @@ export function createUniverse(options: NewUniverseOptions): Universe {
     shows: [],
     history: [],
     transactions: [],
-    news: [{ week: 0, text: `${options.promotionName} opens its doors. The Mayhem and Fury rosters are set.`, tone: "neutral" }],
+    news: [{ week: 0, text: `${options.promotionName} opens its doors. The WWE and AEW rosters are set.`, tone: "neutral" }],
     settings: { ...structuredClone(DEFAULT_SETTINGS), difficulty: options.difficulty },
     counters: { nextId: 1 },
   };

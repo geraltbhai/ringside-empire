@@ -39,7 +39,7 @@ describe("rating model", () => {
   });
 
   it("keeps in-ring, entertainment, popularity, form and potential separate", () => {
-    const w = ROSTER_WRESTLERS.find((x) => x.id === "malik-brooks")!;
+    const w = ROSTER_WRESTLERS.find((x) => x.id === "the-miz")!;
     const card = ratingCard(w);
     expect(card.entertainment).toBeGreaterThan(card.inRing);
     expect(card.popularity).toBe(w.popularity);
@@ -55,9 +55,9 @@ describe("rating model", () => {
 
   it("ships a fixed roster database whose overalls land in sensible tiers", () => {
     const byId = Object.fromEntries(ROSTER_WRESTLERS.map((w) => [w.id, overall(w)]));
-    expect(byId["silas-grimm"]).toBe(96);
-    expect(byId["solomon-reyes"]).toBe(93);
-    expect(byId["benji-moss"]).toBeLessThan(70);
+    expect(byId["undertaker"]).toBe(96);
+    expect(byId["cody-rhodes"]).toBe(93);
+    expect(byId["cedric-alexander"]).toBeLessThan(80);
     for (const w of ROSTER_WRESTLERS) for (const k of ATTRIBUTE_KEYS) expect(w.attributes[k]).toBeGreaterThanOrEqual(1);
   });
 });

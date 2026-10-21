@@ -36,7 +36,6 @@ export default function RosterPage() {
   const u = useUniverse();
   const [q, setQ] = useState("");
   const [brand, setBrand] = useState<BrandId | "all" | "signed">("all");
-  const [division, setDivision] = useState<"all" | "men" | "women">("all");
   const [style, setStyle] = useState<"all" | Wrestler["style"]>("all");
   const [alignment, setAlignment] = useState<"all" | Wrestler["alignment"]>("all");
   const [status, setStatus] = useState<"all" | "healthy" | "injured" | "champions">("all");
@@ -48,7 +47,6 @@ export default function RosterPage() {
       .filter((w) => {
         if (needle && ![w.ringName, w.name, w.nickname, w.finisher, w.style].some((s) => s.toLowerCase().includes(needle))) return false;
         if (brand === "signed" ? !(w.brand === "mayhem" || w.brand === "fury") : brand !== "all" && w.brand !== brand) return false;
-        if (division !== "all" && w.division !== division) return false;
         if (style !== "all" && w.style !== style) return false;
         if (alignment !== "all" && w.alignment !== alignment) return false;
         if (status === "healthy" && w.injury) return false;
@@ -79,7 +77,7 @@ export default function RosterPage() {
       if (typeof va === "string") return va.localeCompare(vb as string) * sort.dir;
       return ((va as number) - (vb as number)) * sort.dir;
     });
-  }, [u, q, brand, division, style, alignment, status, sort]);
+  }, [u, q, brand, style, alignment, status, sort]);
 
   const toggleSort = (key: SortKey) => setSort((s) => (s.key === key ? { key, dir: (s.dir * -1) as 1 | -1 } : { key, dir: key === "name" ? 1 : -1 }));
 
@@ -106,15 +104,10 @@ export default function RosterPage() {
         <select className={select} value={brand} onChange={(e) => setBrand(e.target.value as typeof brand)} aria-label="Brand">
           <option value="all">All brands</option>
           <option value="signed">Under contract</option>
-          <option value="mayhem">Monday Mayhem</option>
-          <option value="fury">Friday Fury</option>
-          <option value="legends">Legends</option>
+          <option value="mayhem">WWE</option>
+          <option value="fury">AEW</option>
+          <option value="legends">Legends &amp; Icons</option>
           <option value="free-agents">Free agents</option>
-        </select>
-        <select className={select} value={division} onChange={(e) => setDivision(e.target.value as typeof division)} aria-label="Division">
-          <option value="all">All divisions</option>
-          <option value="men">Men</option>
-          <option value="women">Women</option>
         </select>
         <select className={select} value={style} onChange={(e) => setStyle(e.target.value as typeof style)} aria-label="Style">
           <option value="all">All styles</option>
@@ -175,7 +168,7 @@ export default function RosterPage() {
                           {titles.length > 0 && <span className="ml-1.5 text-xs text-gold-light" title={titles.map((t) => t.name).join(", ")}>♛</span>}
                         </span>
                         <span className="block truncate text-xs text-muted">
-                          {w.style} · {w.alignment} · {w.division}
+                          {w.style} · {w.alignment}
                           {w.injury && <span className="ml-1 text-bad">· injured {w.injury.weeksRemaining}w</span>}
                         </span>
                       </span>

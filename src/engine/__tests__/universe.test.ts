@@ -22,12 +22,12 @@ describe("finances", () => {
     const u = make();
     const show = mayhem(u);
     const venue = u.venues.find((v) => v.id === show.venueId)!;
-    const stars = ["marcus-vale", "drago-kessler", "jax-rourke"];
+    const stars = ["drew-mcintyre", "cody-rhodes", "randy-orton"];
     const cheap = projectAttendance(u, { ...show, ticketPrice: 30 }, venue, stars);
     const pricey = projectAttendance(u, { ...show, ticketPrice: 120 }, venue, stars);
     expect(cheap).toBeGreaterThan(pricey);
     expect(cheap).toBeLessThanOrEqual(venue.capacity);
-    expect(demandIndex(u, show, stars)).toBeGreaterThan(demandIndex(u, show, ["benji-moss", "zane-parker"]));
+    expect(demandIndex(u, show, stars)).toBeGreaterThan(demandIndex(u, show, ["cedric-alexander", "xavier-woods"]));
   });
 
   it("charges payroll and overhead when the week advances", () => {
@@ -53,19 +53,19 @@ describe("weekly loop", () => {
     const u = make();
     const show = mayhem(u);
     show.segments = [
-      newSegment(u, "match", { sideA: ["marcus-vale"], sideB: ["drago-kessler"], rivalryId: "riv-vale-kessler", outcome: { mode: "manual", winnerSide: "A" }, isMainEvent: true }),
-      newSegment(u, "match", { sideA: ["kai-moana"], sideB: ["bruno-kraus"] }),
+      newSegment(u, "match", { sideA: ["drew-mcintyre"], sideB: ["cody-rhodes"], rivalryId: "riv-cody-drew", outcome: { mode: "manual", winnerSide: "A" }, isMainEvent: true }),
+      newSegment(u, "match", { sideA: ["la-knight"], sideB: ["bronson-reed"] }),
     ];
-    const popBefore = u.wrestlers["marcus-vale"].popularity;
-    const intensityBefore = u.rivalries["riv-vale-kessler"].intensity;
+    const popBefore = u.wrestlers["drew-mcintyre"].popularity;
+    const intensityBefore = u.rivalries["riv-cody-drew"].intensity;
     const result = runShow(u, show.id);
     expect(show.status).toBe("completed");
-    expect(u.wrestlers["marcus-vale"].record.wins).toBe(1);
-    expect(u.wrestlers["drago-kessler"].record.losses).toBe(1);
+    expect(u.wrestlers["drew-mcintyre"].record.wins).toBe(1);
+    expect(u.wrestlers["cody-rhodes"].record.losses).toBe(1);
     expect(u.history).toHaveLength(2);
-    expect(u.wrestlers["marcus-vale"].popularity).not.toBe(popBefore);
-    expect(u.rivalries["riv-vale-kessler"].intensity).toBeGreaterThan(intensityBefore);
-    expect(u.rivalries["riv-vale-kessler"].aWins).toBe(1);
+    expect(u.wrestlers["drew-mcintyre"].popularity).not.toBe(popBefore);
+    expect(u.rivalries["riv-cody-drew"].intensity).toBeGreaterThan(intensityBefore);
+    expect(u.rivalries["riv-cody-drew"].aWins).toBe(1);
     expect(result.revenue.tickets).toBeGreaterThan(0);
     expect(u.transactions.length).toBeGreaterThan(0);
   });
@@ -73,18 +73,18 @@ describe("weekly loop", () => {
   it("moves a championship and keeps lineage when the challenger wins a title match", () => {
     const u = make();
     const show = mayhem(u);
-    show.segments = [newSegment(u, "match", { sideA: ["drago-kessler"], sideB: ["marcus-vale"], titleId: "apex-world", outcome: { mode: "manual", winnerSide: "B" }, isMainEvent: true })];
+    show.segments = [newSegment(u, "match", { sideA: ["cody-rhodes"], sideB: ["drew-mcintyre"], titleId: "wwe-undisputed", outcome: { mode: "manual", winnerSide: "B" }, isMainEvent: true })];
     runShow(u, show.id);
-    const title = u.championships["apex-world"];
+    const title = u.championships["wwe-undisputed"];
     // A booked finish is decisive unless the simulator rolled a DQ for flavour; either way the rule must hold.
     const last = u.history[u.history.length - 1];
     if (last.titleChange) {
-      expect(title.holderIds).toEqual(["marcus-vale"]);
-      const ended = title.reigns.find((r) => r.holderIds.includes("drago-kessler") && r.endWeek === 0);
+      expect(title.holderIds).toEqual(["drew-mcintyre"]);
+      const ended = title.reigns.find((r) => r.holderIds.includes("cody-rhodes") && r.endWeek === 0);
       expect(ended).toBeDefined();
-      expect(title.reigns[title.reigns.length - 1]).toMatchObject({ holderIds: ["marcus-vale"], endWeek: null });
+      expect(title.reigns[title.reigns.length - 1]).toMatchObject({ holderIds: ["drew-mcintyre"], endWeek: null });
     } else {
-      expect(title.holderIds).toEqual(["drago-kessler"]);
+      expect(title.holderIds).toEqual(["cody-rhodes"]);
     }
   });
 
@@ -109,7 +109,7 @@ describe("weekly loop", () => {
 describe("contracts", () => {
   it("accepts fair offers, rejects lowballs with a counter, and charges the bonus", () => {
     const u = make();
-    const w = u.wrestlers["wade-collins"];
+    const w = u.wrestlers["braun-strowman"];
     const low = evaluateOffer(u, w, { weeklySalary: 1000, weeks: 52, signingBonus: 0, brand: "mayhem" });
     expect(low.accepted).toBe(false);
     expect(low.counter?.weeklySalary).toBeGreaterThan(1000);
@@ -123,9 +123,9 @@ describe("contracts", () => {
   it("vacates titles and pays severance on release", () => {
     const u = make();
     const cash = u.cash;
-    const severance = releaseWrestler(u, "drago-kessler");
-    expect(u.championships["apex-world"].holderIds).toEqual([]);
-    expect(u.wrestlers["drago-kessler"].brand).toBe("free-agents");
+    const severance = releaseWrestler(u, "cody-rhodes");
+    expect(u.championships["wwe-undisputed"].holderIds).toEqual([]);
+    expect(u.wrestlers["cody-rhodes"].brand).toBe("free-agents");
     expect(u.cash).toBe(cash - severance);
   });
 });

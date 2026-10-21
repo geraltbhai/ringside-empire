@@ -8,10 +8,10 @@ const make = () => startUniverse({ name: "Test", promotionName: "Test Promo", st
 describe("save system", () => {
   it("round-trips a universe through export/import", () => {
     const u = make();
-    updateWrestler(u, "marcus-vale", { popularity: 33 });
+    updateWrestler(u, "drew-mcintyre", { popularity: 33 });
     const back = parseUniverse(serializeUniverse(u));
-    expect(back.wrestlers["marcus-vale"].popularity).toBe(33);
-    expect(back.championships["apex-world"].holderIds).toEqual(["drago-kessler"]);
+    expect(back.wrestlers["drew-mcintyre"].popularity).toBe(33);
+    expect(back.championships["wwe-undisputed"].holderIds).toEqual(["cody-rhodes"]);
     expect(back.shows.length).toBe(u.shows.length);
   });
 
@@ -19,7 +19,7 @@ describe("save system", () => {
     expect(() => parseUniverse("not json")).toThrow(/valid JSON/);
     const u = make();
     const broken = JSON.parse(serializeUniverse(u));
-    broken.universe.wrestlers["marcus-vale"].attributes.strength = 500;
+    broken.universe.wrestlers["drew-mcintyre"].attributes.strength = 500;
     expect(() => parseUniverse(JSON.stringify(broken))).toThrow(/validation/);
     const future = JSON.parse(serializeUniverse(u));
     future.universe.schemaVersion = 99;
@@ -47,21 +47,21 @@ describe("save system", () => {
 describe("schema migrations", () => {
   it("upgrades a v1 save (no physiques) to v2 without losing edits", () => {
     const u = make();
-    u.wrestlers["marcus-vale"].appearance.primaryColor = "#123456";
+    u.wrestlers["drew-mcintyre"].appearance.primaryColor = "#123456";
     const raw = JSON.parse(serializeUniverse(u));
     raw.universe.schemaVersion = 1;
     const bodyKeys = ["muscle", "definition", "bodyFat", "shoulderWidth", "armSize", "legSize", "bootColor", "kneepads", "wristTape"];
     for (const w of Object.values(raw.universe.wrestlers) as { appearance: Record<string, unknown> }[]) for (const k of bodyKeys) delete w.appearance[k];
     for (const d of Object.values(raw.universe.defaults) as Record<string, unknown>[]) delete d.appearance;
     // a custom wrestler that is not in the seed roster
-    raw.universe.wrestlers["custom-1"] = { ...raw.universe.wrestlers["benji-moss"], id: "custom-1", isCustom: true };
+    raw.universe.wrestlers["custom-1"] = { ...raw.universe.wrestlers["cedric-alexander"], id: "custom-1", isCustom: true };
 
     const back = parseUniverse(JSON.stringify(raw));
     expect(back.schemaVersion).toBe(2);
-    const vale = back.wrestlers["marcus-vale"].appearance;
+    const vale = back.wrestlers["drew-mcintyre"].appearance;
     expect(vale.primaryColor).toBe("#123456"); // player edit kept
     expect(vale.muscle).toBeGreaterThan(0.7); // seeded physique restored
-    expect(back.defaults["marcus-vale"].appearance?.muscle).toBe(vale.muscle);
+    expect(back.defaults["drew-mcintyre"].appearance?.muscle).toBe(vale.muscle);
     const custom = back.wrestlers["custom-1"].appearance;
     for (const k of bodyKeys) expect(custom[k as keyof typeof custom]).toBeDefined();
   });

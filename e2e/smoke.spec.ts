@@ -18,15 +18,15 @@ test("main menu launches a new universe @mobile", async ({ page }) => {
 test("roster search, rating edit and persistence across reloads", async ({ page }) => {
   await newUniverse(page);
   await page.goto("/roster");
-  await page.getByLabel("Search roster").fill("Marcus");
-  await expect(page.getByRole("link", { name: /Marcus Vale/ }).first()).toBeVisible();
-  await page.goto("/roster/marcus-vale/edit");
+  await page.getByLabel("Search roster").fill("Drew");
+  await expect(page.getByRole("link", { name: /Drew McIntyre/ }).first()).toBeVisible();
+  await page.goto("/roster/drew-mcintyre/edit");
   const strength = page.getByLabel("Strength value");
   await strength.fill("40");
   await page.getByRole("button", { name: "Save changes" }).click();
-  await expect(page).toHaveURL(/\/roster\/marcus-vale$/);
+  await expect(page).toHaveURL(/\/roster\/drew-mcintyre$/);
   await page.reload();
-  await page.goto("/roster/marcus-vale/edit");
+  await page.goto("/roster/drew-mcintyre/edit");
   await expect(page.getByLabel("Strength value")).toHaveValue("40");
 });
 
@@ -77,13 +77,13 @@ test("playable match starts, accepts input and can be paused", async ({ page }) 
 
 test("3D character studio saves a new look", async ({ page }) => {
   await newUniverse(page);
-  await page.goto("/roster/jax-rourke/look");
+  await page.goto("/roster/randy-orton/look");
   await page.getByRole("tab", { name: "Ring gear" }).click();
   await page.getByRole("button", { name: "Singlet" }).click();
   await expect(page.getByText("Unsaved changes")).toBeVisible();
   await page.getByRole("button", { name: "Save look" }).click();
-  await expect(page).toHaveURL(/\/roster\/jax-rourke$/);
-  await page.goto("/roster/jax-rourke/look");
+  await expect(page).toHaveURL(/\/roster\/randy-orton$/);
+  await page.goto("/roster/randy-orton/look");
   await page.getByRole("tab", { name: "Ring gear" }).click();
   await expect(page.getByRole("button", { name: "Singlet" })).toHaveAttribute("aria-pressed", "true");
 });

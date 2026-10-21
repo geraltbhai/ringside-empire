@@ -6,11 +6,10 @@ ring to play matches yourself.
 
 ![Dashboard](docs/screenshots/dashboard.png)
 
-> **About the brand.** The original brief asked for a WWE-branded game with real wrestlers. This project
-> ships an **original promotion** (Apex Wrestling Alliance, with *Monday Mayhem* and *Friday Fury*) and
-> **69 fictional wrestlers**: no real names, likenesses, logos, music or artwork. Every rating is a subjective
-> gameplay estimate. You can add or rename anyone you like with the roster editor, the custom-wrestler
-> creator, portrait upload and save import. Those changes live in your own browser.
+> **Roster.** Personal-use fan build. Two brands, **WWE** (*Monday Night Raw*) and **AEW** (*AEW Dynamite*),
+> with their men's rosters, plus **Legends & Icons** (some with several eras) and a few free agents: 134
+> wrestlers in all. Every rating is a subjective gameplay estimate. Names only, no logos, music or artwork.
+> Edit the roster in `src/data/roster-source.ts`, then run `npm run roster`.
 
 ---
 

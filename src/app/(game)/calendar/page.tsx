@@ -18,7 +18,7 @@ export default function CalendarPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Calendar" subtitle="Monday Mayhem and Friday Fury air every week. A joint premium live event closes every fourth week." />
+      <PageHeader title="Calendar" subtitle="Monday Night Raw (WWE) and AEW Dynamite air every week. A joint premium live event closes every fourth week." />
       <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
         <div className="space-y-3">
           {weeks.map((week) => {

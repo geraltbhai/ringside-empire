@@ -115,7 +115,7 @@ export default function BrandsPage() {
         </Panel>
         <Panel title="Trade">
           <div className="space-y-3">
-            <Field label="From Monday Mayhem">
+            <Field label="From WWE">
               <select className={selectClass} value={tradeA} onChange={(e) => setTradeA(e.target.value)}>
                 <option value="">Choose…</option>
                 {rosters.mayhem.map((w) => (
@@ -125,7 +125,7 @@ export default function BrandsPage() {
                 ))}
               </select>
             </Field>
-            <Field label="From Friday Fury">
+            <Field label="From AEW">
               <select className={selectClass} value={tradeB} onChange={(e) => setTradeB(e.target.value)}>
                 <option value="">Choose…</option>
                 {rosters.fury.map((w) => (

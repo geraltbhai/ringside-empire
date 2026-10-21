@@ -49,7 +49,7 @@ export default function FinancesPage() {
           <Stat label="Last 4 weeks" value={month.length ? money(monthProfit) : "—"} tone={monthProfit >= 0 ? "good" : "bad"} hint="monthly profit / loss" />
         </Panel>
         <Panel className="p-4">
-          <Stat label="Weekly payroll" value={money(weeklyPayroll(u))} hint={`Mayhem ${money(weeklyPayroll(u, "mayhem"))} · Fury ${money(weeklyPayroll(u, "fury"))}`} />
+          <Stat label="Weekly payroll" value={money(weeklyPayroll(u))} hint={`WWE ${money(weeklyPayroll(u, "mayhem"))} · AEW ${money(weeklyPayroll(u, "fury"))}`} />
         </Panel>
         <Panel className="p-4">
           <Stat label="4-week forecast" value={money(fc.points.at(-1)?.cash ?? u.cash)} hint={`avg ${money(fc.avgProfit)}/week`} />

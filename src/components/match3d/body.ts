@@ -70,24 +70,24 @@ export function buildBody(a: Appearance, division: Division): BodyGeometry {
   const waistD = 0.094 + f * 0.085 + b * 0.03 + m * 0.012 - (W ? 0.006 : 0);
   const chestW = 0.172 + m * 0.048 + sw * 0.05 + b * 0.03 + f * 0.02 - (W ? 0.03 : 0);
   const chestD = 0.108 + m * 0.036 + b * 0.02 + f * 0.03 - (W ? 0.012 : 0);
-  const hipW = 0.15 + f * 0.05 + b * 0.035 + m * 0.01 + (W ? 0.022 : 0);
+  const hipW = 0.162 + f * 0.05 + b * 0.035 + m * 0.016 + (W ? 0.022 : 0);
   const hipD = 0.104 + f * 0.04 + b * 0.02 + m * 0.012;
-  const neckR = 0.052 + m * 0.03 + b * 0.012 - (W ? 0.008 : 0);
+  const neckR = 0.056 + m * 0.032 + b * 0.014 - (W ? 0.008 : 0);
   const torsoTop = 0.56;
   const armR = (0.04 + m * 0.021 + b * 0.01 + f * 0.006) * armK - (W ? 0.004 : 0);
-  const legR = (0.068 + m * 0.026 + b * 0.02 + f * 0.016) * legK;
-  const deltR = 0.05 + m * 0.03 + sw * 0.01 + b * 0.008 - (W ? 0.008 : 0);
+  const legR = (0.074 + m * 0.03 + b * 0.022 + f * 0.018) * legK;
+  const deltR = 0.054 + m * 0.032 + sw * 0.012 + b * 0.01 - (W ? 0.008 : 0);
   const dims: BodyDims = {
     hipY: 0.95,
     torsoTop,
-    shoulderX: chestW + 0.012 + deltR * 0.25,
+    shoulderX: chestW * 0.95 + deltR * 0.32,
     shoulderY: torsoTop - 0.07,
-    hipX: hipW * 0.5,
+    hipX: hipW * 0.52,
     upperArm: 0.29,
     foreArm: 0.27,
     thigh: 0.45,
     shin: 0.43,
-    neckTop: torsoTop + 0.1,
+    neckTop: torsoTop + 0.08,
     headR: 0.1,
     headCenterY: 0.095,
     handR: 0.034 + m * 0.008 + b * 0.004 - (W ? 0.003 : 0),
@@ -129,7 +129,7 @@ export function buildBody(a: Appearance, division: Division): BodyGeometry {
   ]);
   const pelvis = sculptTube({
     y0: 0.14,
-    y1: -0.11,
+    y1: -0.13,
     radius: (t) => [pelvisRx(t), pelvisRz(t)],
     bumps: [
       { t: 0.55, phi: PI - 0.45, st: 0.2, sp: 0.5, a: 0.01 + m * 0.018 + (W ? 0.01 : 0) },
@@ -148,9 +148,9 @@ export function buildBody(a: Appearance, division: Division): BodyGeometry {
   const absA = (0.002 + d * 0.009 + m * 0.003) * (1 - f * 0.9);
   const torsoBumps: Bump[] = [
     // chest
-    { t: 0.71, phi: 0.5, st: 0.075, stBelow: 0.04, sp: 0.42, a: W ? 0.006 + m * 0.01 : 0.008 + m * 0.032 },
-    { t: 0.71, phi: -0.5, st: 0.075, stBelow: 0.04, sp: 0.42, a: W ? 0.006 + m * 0.01 : 0.008 + m * 0.032 },
-    { t: 0.71, phi: 0, st: 0.1, sp: 0.08, a: -(0.002 + m * 0.008) },
+    { t: 0.72, phi: 0.45, st: 0.08, stBelow: 0.032, sp: 0.38, a: W ? 0.006 + m * 0.01 : 0.01 + m * 0.04 },
+    { t: 0.72, phi: -0.45, st: 0.08, stBelow: 0.032, sp: 0.38, a: W ? 0.006 + m * 0.01 : 0.01 + m * 0.04 },
+    { t: 0.72, phi: 0, st: 0.12, sp: 0.07, a: -(0.003 + m * 0.012) },
     // abdomen: four rows of two
     ...[0.53, 0.42, 0.31, 0.2].flatMap((t, i) =>
       [0.19, -0.19].map((phi) => ({ t, phi, st: 0.038, sp: 0.12, a: absA * (i === 3 ? 0.6 : 1) })),
@@ -168,6 +168,9 @@ export function buildBody(a: Appearance, division: Division): BodyGeometry {
     { t: 0.5, phi: PI, st: 0.3, sp: 0.07, a: -(0.003 + m * 0.006) },
     { t: 0.25, phi: PI - 0.18, st: 0.12, sp: 0.12, a: m * 0.008 },
     { t: 0.25, phi: PI + 0.18, st: 0.12, sp: 0.12, a: m * 0.008 },
+    // front delt / upper pec tie-in so the shoulder joins the chest
+    { t: 0.86, phi: 1.15, st: 0.07, sp: 0.35, a: m * 0.018 },
+    { t: 0.86, phi: -1.15, st: 0.07, sp: 0.35, a: m * 0.018 },
     // traps: slope from neck to shoulders
     { t: 0.93, phi: PI, st: 0.07, sp: 0.9, a: m * 0.03 },
     { t: 0.955, phi: 1.35, st: 0.05, sp: 0.45, a: m * 0.026 + b * 0.006 },
@@ -184,18 +187,19 @@ export function buildBody(a: Appearance, division: Division): BodyGeometry {
     [0, waistW * 0.97],
     [0.3, waistW * 1.02],
     [0.6, lerp(waistW, chestW, 0.55) + m * 0.012],
-    [0.8, chestW],
-    [0.9, chestW * 0.86],
-    [0.97, neckR * 1.7],
-    [1, neckR],
+    [0.78, chestW],
+    [0.88, chestW * 0.96],
+    [0.95, chestW * 0.84],
+    [1, chestW * 0.55],
   ]);
   const torsoRz = curve([
     [0, waistD * 0.97],
     [0.3, waistD],
     [0.64, chestD],
-    [0.8, chestD * 0.97],
-    [0.92, chestD * 0.7],
-    [1, neckR * 0.95],
+    [0.76, chestD * 0.96],
+    [0.88, chestD * 0.82],
+    [0.96, chestD * 0.62],
+    [1, chestD * 0.35],
   ]);
   const torso = sculptTube({
     y0: 0.04,
@@ -216,19 +220,31 @@ export function buildBody(a: Appearance, division: Division): BodyGeometry {
   });
 
   // ── Neck ─────────────────────────────────────────────────
+  const trapX = curve([
+    [0, chestW * 0.78 + m * 0.02],
+    [0.32, neckR * (1.3 + m * 0.35)],
+    [0.62, neckR * 0.98],
+    [1, neckR * 0.84],
+  ]);
+  const trapZ = curve([
+    [0, chestD * 0.7],
+    [0.35, neckR * 1.08],
+    [1, neckR * 0.86],
+  ]);
   const neck = sculptTube({
-    y0: torsoTop - 0.05,
-    y1: dims.neckTop + 0.01,
-    radius: (t) => [lerp(neckR * 1.05, neckR * 0.82, t), lerp(neckR, neckR * 0.85, t)],
-    centerZ: (t) => lerp(-0.012, -0.004, t),
+    y0: torsoTop - 0.07,
+    y1: dims.neckTop + 0.012,
+    radius: (t) => [trapX(t), trapZ(t)],
+    centerZ: (t) => lerp(-0.02, -0.004, t),
     bumps: [
-      { t: 0.45, phi: 0.45, st: 0.3, sp: 0.18, a: m * 0.007 },
-      { t: 0.45, phi: -0.45, st: 0.3, sp: 0.18, a: m * 0.007 },
-      { t: 0.05, phi: PI, st: 0.25, sp: 0.8, a: m * 0.018 },
+      { t: 0.6, phi: 0.45, st: 0.2, sp: 0.18, a: m * 0.008 },
+      { t: 0.6, phi: -0.45, st: 0.2, sp: 0.18, a: m * 0.008 },
+      { t: 0.25, phi: PI, st: 0.25, sp: 0.9, a: m * 0.02 },
+      { t: 0.08, phi: 0, st: 0.12, sp: 0.5, a: -0.01 },
     ],
-    color: () => skin,
-    radial: 24,
-    rings: 8,
+    color: (t, phi) => (a.outfit === "bodysuit" && t < 0.2 && frontness(phi) > 0.6 ? torsoColor(0.95, phi) : skin),
+    radial: 32,
+    rings: 14,
     cavity: cavity * 0.5,
   });
 
@@ -380,15 +396,15 @@ export function buildBody(a: Appearance, division: Division): BodyGeometry {
       [0, 0.004],
       [0.14, deltR * 0.72],
       [0.34, deltR],
-      [0.58, deltR * 0.9],
-      [0.82, armR * 0.98],
-      [1, armR * 0.6],
+      [0.58, deltR * 0.92],
+      [0.84, armR * 1.12],
+      [1, armR * 0.95],
     ]);
     const delt = sculptTube({
       y0: 0.075,
-      y1: -0.13,
-      radius: (t) => [deltRx(t), deltRx(t) * 1.05],
-      centerX: () => s * 0.008,
+      y1: -0.16,
+      radius: (t) => [deltRx(t), deltRx(t) * 1.08],
+      centerX: (t) => s * (0.01 - 0.03 * (1 - t) * (1 - t)),
       bumps: [
         { t: 0.45, phi: 0, st: 0.2, sp: 0.5, a: m * 0.008 },
         { t: 0.45, phi: side, st: 0.2, sp: 0.5, a: m * 0.011 },
@@ -420,6 +436,7 @@ export function buildBody(a: Appearance, division: Division): BodyGeometry {
       color: () => skin,
       radial: 28,
       rings: 18,
+      capStart: true,
       cavity,
     });
     const faRx = curve([
@@ -454,8 +471,8 @@ export function buildBody(a: Appearance, division: Division): BodyGeometry {
   };
   const leg = (s: 1 | -1) => {
     const thRx = curve([
-      [0, legR * 1.12],
-      [0.25, legR * 1.05],
+      [0, legR * 0.96],
+      [0.22, legR * 1.06],
       [0.75, legR * 0.8],
       [1, legR * 0.63],
     ]);
@@ -476,6 +493,8 @@ export function buildBody(a: Appearance, division: Division): BodyGeometry {
         { t: 0.4, phi: PI, st: 0.22, sp: 0.6, a: (0.003 + m * 0.016) * legK },
       ],
       color: (t, phi) => thighColor(t, phi, s),
+      centerX: (t) => -s * 0.01 * (1 - t),
+      capStart: true,
       radial: 30,
       rings: 22,
       cavity: fullLegs ? cavity * 0.6 : cavity,

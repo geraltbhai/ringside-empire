@@ -9,6 +9,7 @@ import { type MutableRefObject, useMemo, useRef } from "react";
 import * as THREE from "three";
 import type { MatchState } from "@/engine/live-match";
 import type { Appearance, Wrestler } from "@/engine/types";
+import * as sfx from "@/lib/sfx";
 import { ArenaLights, ArenaShell, RING, Ring } from "./ArenaScene";
 import { type RigDriver, WrestlerModel } from "./WrestlerModel";
 
@@ -19,7 +20,12 @@ export interface MatchFx {
   phaseTime: number;
   /** Hit-flash intensity per fighter, decays in the scene. */
   flash: [number, number];
+  /** Pending body-slam impact on the canvas (0..1); the scene turns it into ring bounce. */
+  mat: number;
 }
+
+/** Vertical give of the ring after a slam: a damped spring the mat and wrestlers ride on. */
+type Bounce = { y: number; v: number };
 
 const REFEREE: Pick<Wrestler, "appearance" | "division" | "heightIn"> = {
   division: "men",
@@ -48,7 +54,7 @@ const REFEREE: Pick<Wrestler, "appearance" | "division" | "heightIn"> = {
 
 const LIFT_MOVES = new Set(["grapple-quick", "grapple-power", "signature", "finisher"]);
 
-function Fighters({ wrestlers, state, fx }: { wrestlers: [Wrestler, Wrestler]; state: MutableRefObject<MatchState>; fx: MutableRefObject<MatchFx> }) {
+function Fighters({ wrestlers, state, fx, bounce }: { wrestlers: [Wrestler, Wrestler]; state: MutableRefObject<MatchState>; fx: MutableRefObject<MatchFx>; bounce: MutableRefObject<Bounce> }) {
   const drivers = [useRef<RigDriver>({ x: -1.6, z: 0, y: RING.matY, facing: Math.PI / 2, anim: "idle", animTime: 0 }), useRef<RigDriver>({ x: 1.6, z: 0, y: RING.matY, facing: -Math.PI / 2, anim: "idle", animTime: 0 })];
   const ref = useRef<RigDriver>({ x: 0, z: -1.8, y: RING.matY, facing: 0, anim: "ref-watch", animTime: 0 });
   const lastRef = useRef({ x: 0, z: -1.8 });
@@ -60,8 +66,9 @@ function Fighters({ wrestlers, state, fx }: { wrestlers: [Wrestler, Wrestler]; s
       const d = drivers[i].current;
       d.x = f.x;
       d.z = f.z;
-      d.y = RING.matY;
+      d.y = RING.matY + bounce.current.y;
       d.facing = f.facing;
+      d.sweat = Math.min(1, s.time / 150);
       // A grappled defender is carried through the attacker's lift.
       if (f.state === "grappled" && other.state === "attack" && other.move && LIFT_MOVES.has(other.move.kind)) {
         d.anim = "lifted";
@@ -83,6 +90,7 @@ function Fighters({ wrestlers, state, fx }: { wrestlers: [Wrestler, Wrestler]; s
     lastRef.current = { x: s.referee.x, z: s.referee.z };
     r.x = s.referee.x;
     r.z = s.referee.z;
+    r.y = RING.matY + bounce.current.y;
     if (s.pin && s.pin.kind === "pin") {
       const victim = s.fighters[s.pin.defender];
       r.facing = Math.atan2(victim.x - r.x, victim.z - r.z);
@@ -209,15 +217,37 @@ function CameraRig({ state, fx, reducedMotion }: { state: MutableRefObject<Match
 }
 
 
+function BouncingRing({ state, fx, bounce }: { state: MutableRefObject<MatchState>; fx: MutableRefObject<MatchFx>; bounce: MutableRefObject<Bounce> }) {
+  const group = useRef<THREE.Group>(null);
+  const bodies = () => state.current.fighters;
+  useFrame((_, rawDt) => {
+    const dt = Math.min(rawDt, 1 / 30);
+    const b = bounce.current;
+    if (fx.current.mat > 0) {
+      b.v -= fx.current.mat * 0.8;
+      fx.current.mat = 0;
+    }
+    b.v += (-b.y * 900 - b.v * 16) * dt;
+    b.y += b.v * dt;
+    if (group.current) group.current.position.y = b.y;
+  });
+  return (
+    <group ref={group}>
+      <Ring bodies={bodies} onRopeHit={(p) => sfx.rope(p)} />
+    </group>
+  );
+}
+
 export default function MatchScene({ wrestlers, state, fx, reducedMotion, lowGraphics = false }: { wrestlers: [Wrestler, Wrestler]; state: MutableRefObject<MatchState>; fx: MutableRefObject<MatchFx>; reducedMotion: boolean; lowGraphics?: boolean }) {
+  const bounce = useRef<Bounce>({ y: 0, v: 0 });
   return (
     <>
       <color attach="background" args={["#05060a"]} />
       <fog attach="fog" args={["#05060a", 18, 40]} />
       <ArenaLights shadows={!lowGraphics} />
       <ArenaShell heat={() => state.current.crowdHeat} crowdCount={lowGraphics ? 500 : 1400} />
-      <Ring />
-      <Fighters wrestlers={wrestlers} state={state} fx={fx} />
+      <BouncingRing state={state} fx={fx} bounce={bounce} />
+      <Fighters wrestlers={wrestlers} state={state} fx={fx} bounce={bounce} />
       <Sparks fx={fx} />
       <CameraRig state={state} fx={fx} reducedMotion={reducedMotion} />
     </>

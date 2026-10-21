@@ -148,3 +148,181 @@ export function stopCrowd() {
   }
   crowd = null;
 }
+
+function noiseBurst(c: AudioContext, out: AudioNode, t: number, opts: { dur: number; gain: number; type: BiquadFilterType; freq: number; q?: number; sweepTo?: number }) {
+  const n = c.createBufferSource();
+  n.buffer = noiseBuffer(c, opts.dur + 0.05);
+  const f = c.createBiquadFilter();
+  f.type = opts.type;
+  f.frequency.setValueAtTime(opts.freq, t);
+  if (opts.sweepTo) f.frequency.exponentialRampToValueAtTime(opts.sweepTo, t + opts.dur);
+  f.Q.value = opts.q ?? 0.7;
+  const g = c.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(opts.gain, t + Math.min(0.03, opts.dur * 0.3));
+  g.gain.exponentialRampToValueAtTime(0.001, t + opts.dur);
+  n.connect(f).connect(g).connect(out);
+  n.start(t);
+  n.stop(t + opts.dur + 0.05);
+}
+
+function tone(c: AudioContext, out: AudioNode, t: number, opts: { type: OscillatorType; from: number; to: number; dur: number; gain: number; attack?: number }) {
+  const o = c.createOscillator();
+  const g = c.createGain();
+  o.type = opts.type;
+  o.frequency.setValueAtTime(opts.from, t);
+  o.frequency.exponentialRampToValueAtTime(opts.to, t + opts.dur);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(opts.gain, t + (opts.attack ?? 0.005));
+  g.gain.exponentialRampToValueAtTime(0.001, t + opts.dur);
+  o.connect(g).connect(out);
+  o.start(t);
+  o.stop(t + opts.dur + 0.05);
+}
+
+/** Air swing before a strike lands. */
+export function whoosh(power = 0.5) {
+  const c = audio();
+  if (!c || !master) return;
+  noiseBurst(c, master, c.currentTime, { dur: 0.16 + power * 0.1, gain: 0.12 + power * 0.12, type: "bandpass", freq: 500, sweepTo: 2200 + power * 1200, q: 1.4 });
+}
+
+/** A body hitting the canvas: deep thud, ring-frame boom and a mat rattle. */
+export function bodyFall(power = 0.7) {
+  const c = audio();
+  if (!c || !master) return;
+  const t = c.currentTime;
+  tone(c, master, t, { type: "sine", from: 95 + power * 20, to: 38, dur: 0.35 + power * 0.25, gain: 0.7 + power * 0.3 });
+  tone(c, master, t + 0.01, { type: "triangle", from: 70, to: 52, dur: 0.6 + power * 0.4, gain: 0.18 + power * 0.12, attack: 0.02 });
+  noiseBurst(c, master, t, { dur: 0.18 + power * 0.12, gain: 0.5 + power * 0.25, type: "lowpass", freq: 650 });
+  noiseBurst(c, master, t + 0.04, { dur: 0.25, gain: 0.08, type: "bandpass", freq: 3200, q: 3 });
+}
+
+/** Rope stretch and twang. */
+export function rope(power = 0.5) {
+  const c = audio();
+  if (!c || !master) return;
+  const t = c.currentTime;
+  const o = c.createOscillator();
+  const f = c.createBiquadFilter();
+  const g = c.createGain();
+  o.type = "sawtooth";
+  o.frequency.setValueAtTime(82, t);
+  o.frequency.linearRampToValueAtTime(96, t + 0.08);
+  o.frequency.exponentialRampToValueAtTime(70, t + 0.5);
+  f.type = "lowpass";
+  f.frequency.setValueAtTime(900, t);
+  f.frequency.exponentialRampToValueAtTime(220, t + 0.45);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.12 + power * 0.18, t + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
+  o.connect(f).connect(g).connect(master);
+  o.start(t);
+  o.stop(t + 0.6);
+  noiseBurst(c, master, t, { dur: 0.12, gain: 0.08 + power * 0.08, type: "bandpass", freq: 1800, q: 2 });
+}
+
+/** Boots on the canvas while running. */
+export function footstep() {
+  const c = audio();
+  if (!c || !master) return;
+  const t = c.currentTime;
+  tone(c, master, t, { type: "sine", from: 120, to: 60, dur: 0.09, gain: 0.16 });
+  noiseBurst(c, master, t, { dur: 0.06, gain: 0.05, type: "lowpass", freq: 900 });
+}
+
+/** Crowd "ooooh" after a big spot. */
+export function ooh(strength = 1) {
+  const c = audio();
+  if (!c || !master) return;
+  const t = c.currentTime;
+  for (const [freq, gain] of [
+    [420, 0.12],
+    [820, 0.07],
+  ] as const) {
+    const n = c.createBufferSource();
+    n.buffer = noiseBuffer(c, 1.3);
+    const f = c.createBiquadFilter();
+    f.type = "bandpass";
+    f.Q.value = 6;
+    f.frequency.setValueAtTime(freq * 1.15, t);
+    f.frequency.exponentialRampToValueAtTime(freq * 0.85, t + 1.1);
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(gain * strength * 2.2, t + 0.18);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
+    n.connect(f).connect(g).connect(master);
+    n.start(t);
+    n.stop(t + 1.3);
+  }
+}
+
+/** Rhythmic crowd clapping for a hot crowd: clap, clap, clap-clap-clap. */
+export function crowdClap() {
+  const c = audio();
+  if (!c || !master) return;
+  const beats = [0, 0.42, 0.84, 1.05, 1.26];
+  for (let bar = 0; bar < 2; bar++)
+    for (const b of beats) {
+      const t = c.currentTime + bar * 1.7 + b;
+      for (let k = 0; k < 4; k++) noiseBurst(c, master, t + k * 0.012, { dur: 0.07, gain: 0.05, type: "highpass", freq: 1200 + k * 300 });
+    }
+}
+
+/** Stinger when a finisher is ready. */
+export function stinger() {
+  const c = audio();
+  if (!c || !master) return;
+  const t = c.currentTime;
+  for (const [i, freq] of [220, 277, 330, 440].entries()) tone(c, master, t + i * 0.05, { type: "sawtooth", from: freq, to: freq * 1.01, dur: 0.7, gain: 0.05, attack: 0.02 });
+  tone(c, master, t, { type: "sine", from: 60, to: 40, dur: 0.6, gain: 0.4 });
+}
+
+let distortion: WaveShaperNode | null = null;
+function drive(c: AudioContext) {
+  if (distortion && distortion.context === c) return distortion;
+  distortion = c.createWaveShaper();
+  const curve = new Float32Array(1024);
+  for (let i = 0; i < curve.length; i++) {
+    const x = (i / curve.length) * 2 - 1;
+    curve[i] = Math.tanh(x * 4);
+  }
+  distortion.curve = curve;
+  const lp = c.createBiquadFilter();
+  lp.type = "lowpass";
+  lp.frequency.value = 2400;
+  const g = c.createGain();
+  g.gain.value = 0.16;
+  distortion.connect(lp).connect(g).connect(master!);
+  return distortion;
+}
+
+/** Entrance: pyro blast, then a short distorted power-chord riff. */
+export function entrance() {
+  const c = audio();
+  if (!c || !master) return;
+  const t = c.currentTime;
+  tone(c, master, t, { type: "sine", from: 70, to: 30, dur: 1.2, gain: 0.9 });
+  noiseBurst(c, master, t, { dur: 1.4, gain: 0.55, type: "lowpass", freq: 1800, sweepTo: 200 });
+  const dist = drive(c);
+  // E5 power chord riff: root + fifth, palm-muted chugs then an open hit.
+  const riff: [number, number, number][] = [
+    [0.5, 82.4, 0.14], [0.68, 82.4, 0.14], [0.86, 82.4, 0.14], [1.04, 98, 0.3],
+    [1.4, 82.4, 0.14], [1.58, 82.4, 0.14], [1.76, 110, 0.3], [2.1, 98, 0.3], [2.45, 82.4, 1.3],
+  ];
+  for (const [at, root, dur] of riff) {
+    for (const freq of [root, root * 1.5, root * 2]) {
+      const o = c.createOscillator();
+      const g = c.createGain();
+      o.type = "sawtooth";
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, t + at);
+      g.gain.exponentialRampToValueAtTime(0.35, t + at + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.001, t + at + dur);
+      o.connect(g).connect(dist);
+      o.start(t + at);
+      o.stop(t + at + dur + 0.05);
+    }
+    tone(c, master, t + at, { type: "sine", from: 120, to: 50, dur: 0.12, gain: 0.35 });
+  }
+}

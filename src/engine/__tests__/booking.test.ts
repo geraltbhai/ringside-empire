@@ -15,63 +15,61 @@ describe("booking validation", () => {
 
   it("accepts a simple valid card", () => {
     const u = make();
-    mayhem(u).segments = [newSegment(u, "match", { sideA: ["marcus-vale"], sideB: ["jax-rourke"] })];
+    mayhem(u).segments = [newSegment(u, "match", { sideA: ["drew-mcintyre"], sideB: ["randy-orton"] })];
     expect(messages(u)).toBe("");
   });
 
   it("rejects the same wrestler in two matches on one show", () => {
     const u = make();
-    mayhem(u).segments = [newSegment(u, "match", { sideA: ["marcus-vale"], sideB: ["jax-rourke"] }), newSegment(u, "match", { sideA: ["marcus-vale"], sideB: ["kai-moana"] })];
-    expect(messages(u)).toMatch(/Marcus Vale is booked in 2 matches/);
+    mayhem(u).segments = [newSegment(u, "match", { sideA: ["drew-mcintyre"], sideB: ["randy-orton"] }), newSegment(u, "match", { sideA: ["drew-mcintyre"], sideB: ["la-knight"] })];
+    expect(messages(u)).toMatch(/Drew McIntyre is booked in 2 matches/);
   });
 
-  it("rejects injured wrestlers in matches, other brands, unsigned talent and mixed divisions", () => {
+  it("rejects injured wrestlers in matches, other brands, and unsigned talent", () => {
     const u = make();
-    u.wrestlers["jax-rourke"].injury = { description: "Knee sprain", weeksRemaining: 2 };
-    mayhem(u).segments = [newSegment(u, "match", { sideA: ["marcus-vale"], sideB: ["jax-rourke"] })];
+    u.wrestlers["randy-orton"].injury = { description: "Knee sprain", weeksRemaining: 2 };
+    mayhem(u).segments = [newSegment(u, "match", { sideA: ["drew-mcintyre"], sideB: ["randy-orton"] })];
     expect(messages(u)).toMatch(/injured/);
 
-    mayhem(u).segments = [newSegment(u, "match", { sideA: ["marcus-vale"], sideB: ["cole-maddox"] })];
-    expect(messages(u)).toMatch(/Friday Fury/);
+    mayhem(u).segments = [newSegment(u, "match", { sideA: ["drew-mcintyre"], sideB: ["hangman-page"] })];
+    expect(messages(u)).toMatch(/AEW Dynamite/);
 
-    mayhem(u).segments = [newSegment(u, "match", { sideA: ["marcus-vale"], sideB: ["silas-grimm"] })];
+    mayhem(u).segments = [newSegment(u, "match", { sideA: ["drew-mcintyre"], sideB: ["undertaker"] })];
     expect(messages(u)).toMatch(/not under contract/);
 
-    mayhem(u).segments = [newSegment(u, "match", { sideA: ["marcus-vale"], sideB: ["valentina-cruz"] })];
-    expect(messages(u)).toMatch(/Mixed-division/);
   });
 
   it("allows cross-brand talent only when enabled", () => {
     const u = make();
     u.settings.allowCrossBrand = true;
-    mayhem(u).segments = [newSegment(u, "match", { sideA: ["marcus-vale"], sideB: ["cole-maddox"] })];
+    mayhem(u).segments = [newSegment(u, "match", { sideA: ["drew-mcintyre"], sideB: ["hangman-page"] })];
     expect(messages(u)).toBe("");
   });
 
   it("enforces championship rules", () => {
     const u = make();
     // champion must be in the match
-    mayhem(u).segments = [newSegment(u, "match", { sideA: ["marcus-vale"], sideB: ["jax-rourke"], titleId: "apex-world" })];
+    mayhem(u).segments = [newSegment(u, "match", { sideA: ["drew-mcintyre"], sideB: ["randy-orton"], titleId: "wwe-undisputed" })];
     expect(messages(u)).toMatch(/must be in a title match/);
     // tag title needs a tag match
-    mayhem(u).segments = [newSegment(u, "match", { sideA: ["cain-hollow"], sideB: ["ty-okafor"], titleId: "mayhem-tag" })];
+    mayhem(u).segments = [newSegment(u, "match", { sideA: ["finn-balor"], sideB: ["jey-uso"], titleId: "wwe-tag" })];
     expect(messages(u)).toMatch(/needs a tag-team match/);
     // another brand's title
-    mayhem(u).segments = [newSegment(u, "match", { sideA: ["marcus-vale"], sideB: ["jax-rourke"], titleId: "fury-undisputed" })];
-    expect(messages(u)).toMatch(/belongs to Friday Fury/);
+    mayhem(u).segments = [newSegment(u, "match", { sideA: ["drew-mcintyre"], sideB: ["randy-orton"], titleId: "aew-world" })];
+    expect(messages(u)).toMatch(/belongs to AEW Dynamite/);
     // same title twice on one card
     mayhem(u).segments = [
-      newSegment(u, "match", { sideA: ["drago-kessler"], sideB: ["marcus-vale"], titleId: "apex-world" }),
-      newSegment(u, "match", { sideA: ["drago-kessler"], sideB: ["jax-rourke"], titleId: "apex-world" }),
+      newSegment(u, "match", { sideA: ["cody-rhodes"], sideB: ["drew-mcintyre"], titleId: "wwe-undisputed" }),
+      newSegment(u, "match", { sideA: ["cody-rhodes"], sideB: ["randy-orton"], titleId: "wwe-undisputed" }),
     ];
     expect(messages(u)).toMatch(/already on the line/);
   });
 
   it("checks match shape and talk segments", () => {
     const u = make();
-    mayhem(u).segments = [newSegment(u, "match", { matchType: "tag", sideA: ["cain-hollow"], sideB: ["ty-okafor", "lucas-rey"] })];
+    mayhem(u).segments = [newSegment(u, "match", { matchType: "tag", sideA: ["finn-balor"], sideB: ["jey-uso", "jimmy-uso"] })];
     expect(messages(u)).toMatch(/two wrestlers per side/);
-    mayhem(u).segments = [newSegment(u, "rivalry", { sideA: ["marcus-vale"] })];
+    mayhem(u).segments = [newSegment(u, "rivalry", { sideA: ["drew-mcintyre"] })];
     expect(messages(u)).toMatch(/someone on each side/);
   });
 });

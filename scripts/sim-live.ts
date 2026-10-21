@@ -5,7 +5,7 @@ const ws = roster.wrestlers as unknown as Parameters<typeof createMatch>[0][];
 const get = (id: string) => ws.find((w) => w.id === id)!;
 let pw = 0, ow = 0, draws = 0;
 for (let g = 0; g < 20; g++) {
-  const m = createMatch(get("marcus-vale"), get(g % 2 ? "drago-kessler" : "benji-moss"), { timeLimitSec: 480, difficulty: "normal", seed: "t" + g });
+  const m = createMatch(get("drew-mcintyre"), get(g % 2 ? "cody-rhodes" : "cedric-alexander"), { timeLimitSec: 480, difficulty: "normal", seed: "t" + g });
   const rng = createRng("bot", g);
   const counts = { hit: 0, rev: 0, kick: 0 };
   while (!m.over) {

@@ -66,7 +66,7 @@ export default function NewUniversePage() {
             <Field label="Save name">
               <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} maxLength={40} required />
             </Field>
-            <Field label="First show date" hint="Monday Mayhem airs on this day each week; Friday Fury four days later.">
+            <Field label="First show date" hint="Monday Night Raw (WWE) airs on this day each week; AEW Dynamite four days later.">
               <input type="date" className={inputClass} value={startDate} onChange={(e) => setStartDate(e.target.value)} required />
             </Field>
             <fieldset>

@@ -24,7 +24,7 @@ describe("match simulator", () => {
   it("is deterministic for the same seed", () => {
     const u = make();
     const show = weekly(u);
-    const seg = singles(u, "marcus-vale", "jax-rourke");
+    const seg = singles(u, "drew-mcintyre", "randy-orton");
     const a = simulateSegment({ universe: u, show, rng: createRng("x") }, seg);
     const b = simulateSegment({ universe: u, show, rng: createRng("x") }, seg);
     expect(a).toEqual(b);
@@ -33,12 +33,12 @@ describe("match simulator", () => {
   it("lets a much lower-rated wrestler win occasionally, but not usually", () => {
     const u = make();
     const show = weekly(u);
-    const seg = singles(u, "drago-kessler", "zane-parker"); // 92 vs 73
+    const seg = singles(u, "cody-rhodes", "xavier-woods"); // 92 vs 73
     let upsets = 0;
     const N = 400;
     for (let i = 0; i < N; i++) {
       const r = simulateSegment({ universe: u, show, rng: createRng("upset", i) }, seg);
-      if (r.winnerIds.includes("zane-parker")) upsets++;
+      if (r.winnerIds.includes("xavier-woods")) upsets++;
     }
     expect(upsets).toBeGreaterThan(N * 0.03);
     expect(upsets).toBeLessThan(N * 0.35);
@@ -47,8 +47,8 @@ describe("match simulator", () => {
   it("does not decide match quality by overall alone (stakes and crowd matter)", () => {
     const u = make();
     const show = weekly(u);
-    const plain = singles(u, "marcus-vale", "drago-kessler", { durationMin: 16 });
-    const big = singles(u, "marcus-vale", "drago-kessler", { durationMin: 16, titleId: "apex-world", rivalryId: "riv-vale-kessler", isMainEvent: true, stipulation: "steel-cage" });
+    const plain = singles(u, "drew-mcintyre", "cody-rhodes", { durationMin: 16 });
+    const big = singles(u, "drew-mcintyre", "cody-rhodes", { durationMin: 16, titleId: "wwe-undisputed", rivalryId: "riv-cody-drew", isMainEvent: true, stipulation: "steel-cage" });
     const avg = (seg: Segment) => {
       let s = 0;
       for (let i = 0; i < 60; i++) s += simulateSegment({ universe: u, show, rng: createRng("q", i) }, seg).quality;
@@ -59,8 +59,8 @@ describe("match simulator", () => {
 
   it("respects booked (manual) outcomes and labels them", () => {
     const u = make();
-    const r = simulateSegment({ universe: u, show: weekly(u), rng: createRng("m") }, singles(u, "drago-kessler", "benji-moss", { outcome: { mode: "manual", winnerSide: "B" } }));
-    expect(r.winnerIds).toEqual(["benji-moss"]);
+    const r = simulateSegment({ universe: u, show: weekly(u), rng: createRng("m") }, singles(u, "cody-rhodes", "cedric-alexander", { outcome: { mode: "manual", winnerSide: "B" } }));
+    expect(r.winnerIds).toEqual(["cedric-alexander"]);
     expect(r.source).toBe("manual");
   });
 
@@ -70,14 +70,14 @@ describe("match simulator", () => {
     let changes = 0;
     let dqChanges = 0;
     for (let i = 0; i < 300; i++) {
-      const seg = singles(u, "drago-kessler", "marcus-vale", { titleId: "apex-world" });
+      const seg = singles(u, "cody-rhodes", "drew-mcintyre", { titleId: "wwe-undisputed" });
       const r = simulateSegment({ universe: u, show, rng: createRng("title", i) }, seg);
       if (r.titleChange) {
         changes++;
-        expect(r.titleChange.newHolderIds).toEqual(["marcus-vale"]);
-        expect(r.titleChange.previousHolderIds).toEqual(["drago-kessler"]);
+        expect(r.titleChange.newHolderIds).toEqual(["drew-mcintyre"]);
+        expect(r.titleChange.previousHolderIds).toEqual(["cody-rhodes"]);
         if (r.finish.startsWith("Disqualification")) dqChanges++;
-      } else if (r.winnerIds.includes("marcus-vale")) {
+      } else if (r.winnerIds.includes("drew-mcintyre")) {
         expect(r.finish.startsWith("Disqualification") || r.finish.startsWith("Double")).toBe(true);
       }
     }

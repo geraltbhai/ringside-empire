@@ -214,7 +214,7 @@ export function LiveMatch({ u, config, onExit, onRematch }: { u: Universe; confi
   // The engine state is mutable and lives in a ref; the HUD renders from immutable snapshots (below).
   const [initial] = useState(() => createMatch(player, opponent, { timeLimitSec: u.settings.matchMinutes * 60, difficulty: u.settings.difficulty, seed: `${u.seed}:${player.id}:${opponent.id}:${Date.now()}` }));
   const state = useRef<MatchState>(initial);
-  const fx = useRef<MatchFx>({ shake: 0, sparks: [], phase: "intro", phaseTime: 0, flash: [0, 0] });
+  const fx = useRef<MatchFx>({ shake: 0, sparks: [], phase: "intro", phaseTime: 0, flash: [0, 0], mat: 0 });
   const input = useRef<MatchInput>({ moveX: 0, moveZ: 0, run: false, pressed: {} });
   const held = useRef(new Set<ControlAction>());
   const paused = useRef(false);
@@ -232,6 +232,10 @@ export function LiveMatch({ u, config, onExit, onRematch }: { u: Universe; confi
     sfx.setSoundEnabled(u.settings.soundEnabled);
     return () => sfx.stopCrowd();
   }, [u.settings.soundEnabled]);
+
+  useEffect(() => {
+    sfx.entrance();
+  }, []);
 
   const push = useCallback((text: string, tone?: Feed["tone"]) => {
     const id = ++feedId.current;
@@ -290,6 +294,9 @@ export function LiveMatch({ u, config, onExit, onRematch }: { u: Universe; confi
     let raf = 0;
     let last = performance.now();
     let heatTimer = 0;
+    let clapTimer = 0;
+    // Per-fighter memory for sounds that come from animation rather than engine events.
+    const prev = state.current.fighters.map((f) => ({ moveId: f.moveId, anim: f.anim, animTime: f.animTime, step: 0 }));
     const loop = (now: number) => {
       // Real elapsed time (capped at 0.25 s after tab switches), simulated in ≤50 ms sub-steps
       // so slow machines still play at true speed.
@@ -317,6 +324,28 @@ export function LiveMatch({ u, config, onExit, onRematch }: { u: Universe; confi
           const wasOver = s.over;
           stepMatch(s, input.current, dt);
           input.current.pressed = {};
+          s.fighters.forEach((fi, i) => {
+            const p = prev[i];
+            if (fi.moveId !== p.moveId && fi.move && ["light", "heavy", "running"].includes(fi.move.kind)) sfx.whoosh(fi.move.kind === "light" ? 0.3 : 0.8);
+            // The body meets the canvas partway through the fall animation.
+            if (fi.anim === "fall" && (p.anim !== "fall" || p.animTime < 0.42) && fi.animTime >= 0.42) {
+              const by = s.fighters[1 - i].move?.kind;
+              const heavy = by === "finisher" || by === "grapple-power" || by === "signature" ? 1 : 0.6;
+              sfx.bodyFall(heavy);
+              f.mat = Math.max(f.mat, 0.6 + heavy * 0.4);
+              f.shake += 0.35;
+            }
+            if (fi.anim === "run") {
+              p.step += dt;
+              if (p.step > 0.24) {
+                p.step = 0;
+                sfx.footstep();
+              }
+            }
+            p.moveId = fi.moveId;
+            p.anim = fi.anim;
+            p.animTime = fi.animTime;
+          });
           for (const e of s.events) {
             if (e.type === "hit") {
               const ti = s.fighters.findIndex((x) => x.id === e.target);
@@ -326,6 +355,7 @@ export function LiveMatch({ u, config, onExit, onRematch }: { u: Universe; confi
               sfx.hit(e.big ? 1 : Math.min(0.8, e.damage / 10));
               if (e.big) {
                 sfx.pop(0.9);
+                sfx.ooh(1);
                 push(`${s.fighters.find((x) => x.id === e.by)?.name} hits the ${e.move}!`, "gold");
               }
             } else if (e.type === "reversal") {
@@ -336,7 +366,10 @@ export function LiveMatch({ u, config, onExit, onRematch }: { u: Universe; confi
             } else if (e.type === "count") {
               sfx.matSlap();
             } else if (e.type === "kickout") {
-              if (e.count >= 2) sfx.pop(1);
+              if (e.count >= 2) {
+                sfx.pop(1);
+                sfx.ooh(0.8);
+              }
               push(`${s.fighters.find((x) => x.id === e.by)?.name} kicks out${e.count >= 2 ? " at two!" : "!"}`, e.count >= 2 ? "gold" : undefined);
             } else if (e.type === "escape") {
               sfx.pop(0.8);
@@ -344,6 +377,7 @@ export function LiveMatch({ u, config, onExit, onRematch }: { u: Universe; confi
             } else if (e.type === "tapout") {
               push(`${s.fighters.find((x) => x.id === e.by)?.name} taps out!`, "bad");
             } else if (e.type === "message") {
+              if (e.tone === "gold") sfx.stinger();
               push(e.text, e.tone);
             }
           }
@@ -351,6 +385,11 @@ export function LiveMatch({ u, config, onExit, onRematch }: { u: Universe; confi
           if (heatTimer > 0.25) {
             heatTimer = 0;
             sfx.setCrowdHeat(s.crowdHeat);
+          }
+          clapTimer -= dt;
+          if (s.crowdHeat > 0.75 && clapTimer <= 0 && !s.over) {
+            clapTimer = 14;
+            sfx.crowdClap();
           }
           if (!wasOver && s.over) {
             f.phase = "over";
