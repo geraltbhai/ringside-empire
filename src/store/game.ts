@@ -42,26 +42,83 @@ interface GameState {
 }
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
+const PENDING_KEY = "ringside:pending-save";
 let toastId = 1;
 
 export const useGame = create<GameState>((set, get) => {
+  let inflight = 0;
+  let lastWrite = 0;
+  /** Universe revision that IndexedDB is known to hold. */
+  let writtenRev = "";
   const persist = async () => {
     const { universe, slot } = get();
     if (!universe || !slot) return;
     set({ saveState: "saving" });
+    inflight++;
+    lastWrite = Date.now();
     try {
       await db.saveToSlot(slot, universe);
-      set({ saveState: "saved" });
+      writtenRev = universe.updatedAt;
+      set({ saveState: inflight > 1 || saveTimer ? "saving" : "saved" });
       get().refreshSlots();
     } catch (e) {
       console.error(e);
       set({ saveState: "error", error: "Autosave failed — export your save to be safe." });
+    } finally {
+      inflight--;
     }
   };
+  /** Leading-edge write so a single action is saved straight away; trailing debounce for bursts (sliders). */
   const scheduleSave = () => {
     if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = null;
     set({ saveState: "saving" });
-    saveTimer = setTimeout(persist, 300);
+    if (Date.now() - lastWrite > 400) {
+      void persist();
+      return;
+    }
+    saveTimer = setTimeout(() => {
+      saveTimer = null;
+      void persist();
+    }, 250);
+  };
+  // Never lose the last change when the tab is hidden, closed or reloaded. IndexedDB writes are
+  // asynchronous and may not finish during unload, so an unwritten universe is also copied
+  // synchronously to localStorage and recovered on the next boot.
+  if (typeof window !== "undefined") {
+    const flush = () => {
+      const { universe, slot } = get();
+      if (!universe || !slot) return;
+      if (saveTimer) {
+        clearTimeout(saveTimer);
+        saveTimer = null;
+        void persist();
+      }
+      if (inflight > 0 || writtenRev !== universe.updatedAt) {
+        try {
+          localStorage.setItem(PENDING_KEY, JSON.stringify({ slot, at: universe.updatedAt, json: serializeUniverse(universe) }));
+        } catch {
+          /* quota or private mode: IndexedDB write is still in progress */
+        }
+      }
+    };
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", () => document.visibilityState === "hidden" && flush());
+  }
+
+  /** Returns a universe newer than the IndexedDB copy if one was saved during the last unload. */
+  const recoverPending = (slot: string, stored: Universe | null): Universe | null => {
+    try {
+      const raw = localStorage.getItem(PENDING_KEY);
+      if (!raw) return null;
+      localStorage.removeItem(PENDING_KEY);
+      const pending = JSON.parse(raw) as { slot: string; at: string; json: string };
+      if (pending.slot !== slot) return null;
+      if (stored && stored.updatedAt >= pending.at) return null;
+      return parseUniverse(pending.json);
+    } catch {
+      return null;
+    }
   };
 
   return {
@@ -79,9 +136,13 @@ export const useGame = create<GameState>((set, get) => {
         const slots = await db.listSlots();
         const active = await db.activeSlot();
         if (active) {
-          const universe = await db.loadSlot(active);
+          const stored = await db.loadSlot(active);
+          const recovered = recoverPending(active, stored);
+          const universe = recovered ?? stored;
           if (universe) {
             set({ status: "ready", universe, slot: active, slots });
+            if (recovered) await persist();
+            else writtenRev = universe.updatedAt;
             return;
           }
         }

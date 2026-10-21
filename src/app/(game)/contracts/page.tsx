@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { BrandBadge, OverallBadge } from "@/components/game";
 import { Portrait } from "@/components/Portrait";
 import { Button, Field, inputClass, Meter, Modal, PageHeader, Stat, Tabs } from "@/components/ui/primitives";
@@ -106,19 +106,11 @@ function ContractsInner() {
   const u = useUniverse();
   const run = useAction();
   const params = useSearchParams();
-  const [tab, setTab] = useState<Tab>("signed");
-  const [negotiating, setNegotiating] = useState<string | null>(null);
-
-  useEffect(() => {
-    const id = params.get("w");
-    if (id && u.wrestlers[id]) {
-      setNegotiating(id);
-      const w = u.wrestlers[id];
-      setTab(w.brand === "legends" ? "legends" : w.brand === "free-agents" ? "free-agents" : "signed");
-    }
-    // only on first load of a ?w= link
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params]);
+  // A ?w=<id> link opens straight into that wrestler's negotiation, on the right tab.
+  const linked = params.get("w");
+  const linkedW = linked ? u.wrestlers[linked] : undefined;
+  const [tab, setTab] = useState<Tab>(() => (linkedW?.brand === "legends" ? "legends" : linkedW?.brand === "free-agents" ? "free-agents" : "signed"));
+  const [negotiating, setNegotiating] = useState<string | null>(() => (linkedW ? linkedW.id : null));
 
   const list = useMemo(() => {
     const all = Object.values(u.wrestlers);

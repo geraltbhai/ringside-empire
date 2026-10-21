@@ -140,7 +140,7 @@ function MatchPageInner() {
               <Gamepad2 size={18} /> Ring the bell
             </Button>
           </div>
-          {injured.length > 0 && <p className="mt-2 text-sm text-bad">{injured.map((w) => w.ringName).join(" and ")} is injured and can't wrestle.</p>}
+          {injured.length > 0 && <p className="mt-2 text-sm text-bad">{injured.map((w) => w.ringName).join(" and ")} is injured and can&apos;t wrestle.</p>}
         </Panel>
         <Panel title="Controls">
           <ControlsGuide controls={u.settings.controls} />
@@ -224,7 +224,7 @@ function MatchPageInner() {
             <Gamepad2 size={18} /> Ring the bell
           </Button>
         </div>
-        {(player.injury || opponent?.injury) && <p className="mt-2 text-sm text-bad">Injured wrestlers can't compete. Pick someone healthy.</p>}
+        {(player.injury || opponent?.injury) && <p className="mt-2 text-sm text-bad">Injured wrestlers can&apos;t compete. Pick someone healthy.</p>}
         <p className="mt-3 text-xs text-muted">
           AI difficulty: <span className="capitalize text-ink">{u.settings.difficulty}</span> · time limit {u.settings.matchMinutes} min ·{" "}
           <button className="underline hover:text-ink" onClick={() => router.push("/settings")}>

@@ -27,6 +27,11 @@ const COLUMNS: { key: SortKey; label: string; className?: string }[] = [
   { key: "contract", label: "Contract", className: "hidden xl:table-cell" },
 ];
 
+function SortIcon({ sort, k }: { sort: { key: SortKey; dir: 1 | -1 }; k: SortKey }) {
+  if (sort.key !== k) return null;
+  return sort.dir === 1 ? <ArrowUp size={12} /> : <ArrowDown size={12} />;
+}
+
 export default function RosterPage() {
   const u = useUniverse();
   const [q, setQ] = useState("");
@@ -77,7 +82,7 @@ export default function RosterPage() {
   }, [u, q, brand, division, style, alignment, status, sort]);
 
   const toggleSort = (key: SortKey) => setSort((s) => (s.key === key ? { key, dir: (s.dir * -1) as 1 | -1 } : { key, dir: key === "name" ? 1 : -1 }));
-  const SortIcon = ({ k }: { k: SortKey }) => (sort.key === k ? sort.dir === 1 ? <ArrowUp size={12} /> : <ArrowDown size={12} /> : null);
+
   const select = "h-10 rounded-md border border-rope bg-arena px-2 text-sm";
 
   return (
@@ -139,14 +144,14 @@ export default function RosterPage() {
             <tr>
               <th className="px-3 py-2">
                 <button onClick={() => toggleSort("name")} className="flex items-center gap-1 font-semibold">
-                  Wrestler <SortIcon k="name" />
+                  Wrestler <SortIcon sort={sort} k="name" />
                 </button>
               </th>
               <th className="hidden px-3 py-2 sm:table-cell">Brand</th>
               {COLUMNS.map((c) => (
                 <th key={c.key} className={cn("px-2 py-2 text-right", c.className)} aria-sort={sort.key === c.key ? (sort.dir === 1 ? "ascending" : "descending") : "none"}>
                   <button onClick={() => toggleSort(c.key)} className="ml-auto flex items-center gap-1 font-semibold">
-                    {c.label} <SortIcon k={c.key} />
+                    {c.label} <SortIcon sort={sort} k={c.key} />
                   </button>
                 </th>
               ))}

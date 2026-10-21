@@ -235,7 +235,18 @@ function CloudSaves() {
     if (usr) setSaves(await listCloudSaves());
   };
   useEffect(() => {
-    if (cloudConfigured) refresh().catch(() => undefined);
+    if (!cloudConfigured) return;
+    let live = true;
+    currentUser()
+      .then(async (usr) => {
+        if (!live) return;
+        setUser(usr?.email ?? null);
+        if (usr) setSaves(await listCloudSaves());
+      })
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
   }, []);
   const act = async (fn: () => Promise<unknown>, ok: string) => {
     setBusy(true);

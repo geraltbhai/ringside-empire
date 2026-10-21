@@ -55,7 +55,6 @@ export default function GameLayout({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (status === "empty") router.replace("/");
   }, [status, router]);
-  useEffect(() => setOpen(false), [pathname]);
 
   if (status === "error") {
     return (
@@ -83,6 +82,7 @@ export default function GameLayout({ children }: { children: ReactNode }) {
           <Link
             key={href}
             href={href}
+            onClick={() => setOpen(false)}
             className={cn(
               "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-semibold transition-colors",
               active ? "bg-ink text-arena" : "text-muted hover:bg-canvas-2 hover:text-ink",

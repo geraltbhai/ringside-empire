@@ -3,7 +3,8 @@
 import { Crown, Pause, Play, RotateCcw } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type React from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { OverallBadge } from "@/components/game";
 import { SafeCanvas, webglAvailable } from "@/components/match3d/SafeCanvas";
 import type { MatchFx } from "@/components/match3d/MatchScene";
@@ -163,23 +164,63 @@ function TouchPad({ press, hold }: { press: (a: ControlAction) => void; hold: (a
   );
 }
 
+interface HudSnapshot {
+  state: MatchState;
+  phase: MatchFx["phase"];
+  now: number;
+}
+
+/** Copies the parts of the engine state the HUD renders, so React never reads the live mutable object. */
+function snapshot(m: MatchState, phase: MatchFx["phase"]): HudSnapshot {
+  return {
+    phase,
+    now: performance.now(),
+    state: {
+      ...m,
+      events: [],
+      fighters: m.fighters.map((f) => ({ ...f, move: f.move ? { ...f.move } : null, uniqueMoves: new Set(f.uniqueMoves), recentMoves: [...f.recentMoves], attrs: f.attrs })) as MatchState["fighters"],
+      referee: { ...m.referee },
+      pin: m.pin ? { ...m.pin } : null,
+      ai: { ...m.ai },
+    },
+  };
+}
+
+/** The 3D (or 2D fallback) view. Memoised: HUD ticks re-render the overlay, never the scene graph. */
+const MatchView = memo(function MatchView({ use3d, player, opponent, state, fx, reducedMotion, lowGraphics }: { use3d: boolean; player: Wrestler; opponent: Wrestler; state: React.MutableRefObject<MatchState>; fx: React.MutableRefObject<MatchFx>; reducedMotion: boolean; lowGraphics: boolean }) {
+  const [failed3d, setFailed3d] = useState(false);
+  const colors: [string, string] = [player.appearance.primaryColor, opponent.appearance.primaryColor];
+  if (!use3d || failed3d) {
+    return (
+      <div className="mx-auto h-full max-w-3xl pt-24">
+        <TopDownView state={state} colors={colors} />
+      </div>
+    );
+  }
+  return (
+    <SafeCanvas shadows={!lowGraphics} dpr={lowGraphics ? 1 : [1, 1.75]} camera={{ position: [0, 6, 12], fov: 45 }} fallback={<TopDownView state={state} colors={colors} />} onError={() => setFailed3d(true)}>
+      <MatchScene wrestlers={[player, opponent]} state={state} fx={fx} reducedMotion={reducedMotion} lowGraphics={lowGraphics} />
+    </SafeCanvas>
+  );
+});
+
 export function LiveMatch({ u, config, onExit, onRematch }: { u: Universe; config: MatchConfig; onExit: () => void; onRematch: () => void }) {
   const run = useAction();
   const { player, opponent, titleId, source } = config;
   const controls = u.settings.controls;
-  const seed = useMemo(() => `${u.seed}:${player.id}:${opponent.id}:${Date.now()}`, [u.seed, player.id, opponent.id]);
-  const state = useRef<MatchState>(createMatch(player, opponent, { timeLimitSec: u.settings.matchMinutes * 60, difficulty: u.settings.difficulty, seed }));
+  // The engine state is mutable and lives in a ref; the HUD renders from immutable snapshots (below).
+  const [initial] = useState(() => createMatch(player, opponent, { timeLimitSec: u.settings.matchMinutes * 60, difficulty: u.settings.difficulty, seed: `${u.seed}:${player.id}:${opponent.id}:${Date.now()}` }));
+  const state = useRef<MatchState>(initial);
   const fx = useRef<MatchFx>({ shake: 0, sparks: [], phase: "intro", phaseTime: 0, flash: [0, 0] });
   const input = useRef<MatchInput>({ moveX: 0, moveZ: 0, run: false, pressed: {} });
   const held = useRef(new Set<ControlAction>());
   const paused = useRef(false);
   const [isPaused, setPaused] = useState(false);
-  const [, setTick] = useState(0);
+  const [hud, setHud] = useState(() => snapshot(initial, "intro"));
   const [feed, setFeed] = useState<Feed[]>([]);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [showResults, setShowResults] = useState(false);
   const [use3d] = useState(() => webglAvailable());
-  const [failed3d, setFailed3d] = useState(false);
   const feedId = useRef(0);
   const recordedRef = useRef(false);
   const title = titleId ? u.championships[titleId] : null;
@@ -361,7 +402,7 @@ export function LiveMatch({ u, config, onExit, onRematch }: { u: Universe; confi
     window.addEventListener("keyup", up);
     window.addEventListener("blur", blur);
     raf = requestAnimationFrame(loop);
-    const hud = setInterval(() => setTick((t) => t + 1), 80);
+    const hud = setInterval(() => setHud(snapshot(state.current, fx.current.phase)), 80);
     return () => {
       cancelAnimationFrame(raf);
       clearInterval(hud);
@@ -372,8 +413,8 @@ export function LiveMatch({ u, config, onExit, onRematch }: { u: Universe; confi
     };
   }, [controls]);
 
-  const s = state.current;
-  const f = fx.current;
+  const s = hud.state;
+  const f = { phase: hud.phase };
   const [pf, of] = s.fighters;
   const remaining = Math.max(0, s.timeLimit - s.time);
   const clock = `${Math.floor(remaining / 60)}:${String(Math.floor(remaining % 60)).padStart(2, "0")}`;
@@ -381,7 +422,7 @@ export function LiveMatch({ u, config, onExit, onRematch }: { u: Universe; confi
   const reversalOpen = of.state === "attack" && of.move && !of.moveHit && of.move.reversalWindow > 0 && of.stateTime >= of.move.startup - of.move.reversalWindow - 0.05;
   const lockupPrompt = pf.state === "lockup";
   const lockedInPrompt = pf.state === "grappled" && of.state === "lockup";
-  const now = typeof performance !== "undefined" ? performance.now() : 0;
+  const now = hud.now;
   const pressTouch = (a: ControlAction) => {
     if (fx.current.phase === "intro") {
       fx.current.phase = "live";
@@ -405,21 +446,7 @@ export function LiveMatch({ u, config, onExit, onRematch }: { u: Universe; confi
     <div className="fixed inset-0 z-40 bg-arena">
       {/* renderer */}
       <div className="absolute inset-0">
-        {use3d && !failed3d ? (
-          <SafeCanvas
-            shadows={u.settings.graphics !== "low"}
-            dpr={u.settings.graphics === "low" ? 1 : [1, 1.75]}
-            camera={{ position: [0, 6, 12], fov: 45 }}
-            fallback={<TopDownView state={state} colors={[player.appearance.primaryColor, opponent.appearance.primaryColor]} />}
-            onError={() => setFailed3d(true)}
-          >
-            <MatchScene wrestlers={[player, opponent]} state={state} fx={fx} reducedMotion={u.settings.reducedMotion} lowGraphics={u.settings.graphics === "low"} />
-          </SafeCanvas>
-        ) : (
-          <div className="mx-auto h-full max-w-3xl pt-24">
-            <TopDownView state={state} colors={[player.appearance.primaryColor, opponent.appearance.primaryColor]} />
-          </div>
-        )}
+        <MatchView use3d={use3d} player={player} opponent={opponent} state={state} fx={fx} reducedMotion={u.settings.reducedMotion} lowGraphics={u.settings.graphics === "low"} />
       </div>
 
       {/* HUD */}
