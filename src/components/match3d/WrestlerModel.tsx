@@ -15,8 +15,9 @@ import { type MutableRefObject, useEffect, useMemo, useRef, useState } from "rea
 import * as THREE from "three";
 import { hashString } from "@/engine/rng";
 import type { Appearance, Wrestler } from "@/engine/types";
-import { type HumanBase, loadHumanBase } from "./human/base";
-import { beardMask, buildShell, createEyeMaterial, createHairMaterial, hairMask, longHairGeometry, ponytailGeometry } from "./human/parts";
+import { type HumanAssets, loadHumanAssets } from "./human/assets";
+import type { HumanBase } from "./human/base";
+import { buildPartGeometry, buildShell, createCardMaterial, createEyeMaterial, createHairMaterial, hairMask } from "./human/parts";
 import { solveArmIK } from "./human/ik";
 import { buildRig, type Rig } from "./human/rig";
 import { sculptWrestler } from "./human/sculpt";
@@ -54,7 +55,7 @@ export interface RigControl {
   ik?: { L?: THREE.Vector3; R?: THREE.Vector3; weight: number };
 }
 
-type ModelSource = Pick<Wrestler, "appearance" | "division" | "heightIn"> & { id?: string };
+type ModelSource = Pick<Wrestler, "appearance" | "division" | "heightIn"> & { id?: string; age?: number };
 
 const POSE_KEYS = Object.keys(NEUTRAL) as (keyof Pose)[];
 const ROOT_KEYS = new Set<keyof Pose>(["rootY", "rootTilt", "rootRoll"]);
@@ -84,21 +85,22 @@ const GROUND: [string, number][] = [
   ["handR", 0.035],
 ];
 const gp = new THREE.Vector3();
-const IRIS = ["#3b2a1d", "#2a1c12", "#4a3622", "#3d4f5f", "#4d5a3a", "#1f1611"];
+/** Iris tints over the brown iris texture. */
+const IRIS = ["#ffffff", "#e8ddd0", "#c9b8a6", "#b9c9d8", "#c3cfae", "#9a8a7a"];
 
-function useHumanBase() {
-  const [base, setBase] = useState<HumanBase | null>(null);
+function useHumanAssets() {
+  const [assets, setAssets] = useState<HumanAssets | null>(null);
   useEffect(() => {
     let live = true;
-    loadHumanBase().then(
-      (b) => live && setBase(b),
-      (e) => console.error("wrestler base mesh failed to load", e),
+    loadHumanAssets().then(
+      (x) => live && setAssets(x),
+      (e) => console.error("wrestler model assets failed to load", e),
     );
     return () => {
       live = false;
     };
   }, []);
-  return base;
+  return assets;
 }
 
 /** Apply world-space rest offsets to bones (and therefore their subtrees). */
@@ -114,14 +116,19 @@ function shiftBones(base: HumanBase, shifts: Map<number, THREE.Vector3>): HumanB
   return { ...base, bones };
 }
 
-export function build(base: HumanBase, w: ModelSource, castShadow: boolean) {
+export function build(assets: HumanAssets, w: ModelSource, castShadow: boolean) {
+  const { base, tex, mean } = assets;
   const a = w.appearance as Appearance;
   const id = w.id ?? JSON.stringify(a);
   const seed = hashString(id);
-  const sculpt = sculptWrestler(base, a, id);
+  const sculpt = sculptWrestler(base, a, id, w.age);
   const rig = buildRig(shiftBones(base, sculpt.boneShift));
   const lm = sculpt.landmarks;
-  const { material, uniforms } = createSkinMaterial(a, lm, seed);
+  // darker tones use the darker skin map (different lip and crease contrast)
+  const tone = new THREE.Color(a.skinTone);
+  const skinKey = tone.r * 0.3 + tone.g * 0.59 + tone.b * 0.11 < 0.22 ? "skin_dark" : "skin_light";
+  const fallbackMean = new THREE.Vector3(0.5, 0.4, 0.35);
+  const { material, uniforms } = createSkinMaterial(a, lm, seed, tex[skinKey] ?? null, mean[`${skinKey}_body`] ?? fallbackMean, mean[`${skinKey}_head`] ?? fallbackMean);
 
   const body = new THREE.SkinnedMesh(sculpt.geometry, material);
   body.castShadow = castShadow;
@@ -135,58 +142,48 @@ export function build(base: HumanBase, w: ModelSource, castShadow: boolean) {
   const group = new THREE.Group();
   group.add(body);
   const disposables: { dispose: () => void }[] = [sculpt.geometry, material];
-
-  // scalp hair and beard shells
-  const hairMat = createHairMaterial(a.hairColor);
-  disposables.push(hairMat);
-  const thickness = { bald: 0, buzz: 0, short: 0.009, long: 0.012, mohawk: 0.03, ponytail: 0.006 }[a.hairStyle];
-  const r = new THREE.Vector3();
-  const shells: THREE.BufferGeometry[] = [];
-  if (!a.mask && thickness > 0) {
-    const g = buildShell(sculpt.geometry, (p) => hairMask(a.hairStyle, r.copy(p), lm), thickness);
-    if (g) shells.push(g);
-  }
-  if (!a.mask && (a.facialHair === "beard" || a.facialHair === "goatee")) {
-    const g = buildShell(sculpt.geometry, (p) => beardMask(a.facialHair, r.copy(p), lm), a.facialHair === "beard" ? 0.0055 : 0.004, 0.3);
-    if (g) shells.push(g);
-  }
-  for (const g of shells) {
-    const shell = new THREE.SkinnedMesh(g, hairMat);
-    shell.castShadow = castShadow;
-    shell.frustumCulled = false;
-    shell.bind(rig.skeleton, new THREE.Matrix4());
-    group.add(shell);
+  const skinned = (g: THREE.BufferGeometry, mat: THREE.Material, shadow = castShadow) => {
+    const m = new THREE.SkinnedMesh(g, mat);
+    m.castShadow = shadow;
+    m.frustumCulled = false;
+    m.bind(rig.skeleton, new THREE.Matrix4());
+    group.add(m);
     disposables.push(g);
-  }
-
-  // head attachments, positioned in the head bone's bind-pose frame
-  const head = rig.by("spine005");
-  const toHead = new THREE.Matrix4().copy(head.matrixWorld).invert();
-  const attach = (obj: THREE.Object3D) => {
-    obj.updateMatrix();
-    obj.applyMatrix4(toHead);
-    head.add(obj);
+    return m;
   };
-  if (!a.mask && (a.hairStyle === "long" || a.hairStyle === "ponytail")) {
-    const g = a.hairStyle === "long" ? longHairGeometry(lm, 0.26 + (seed % 7) * 0.012) : ponytailGeometry(lm);
-    const m = new THREE.Mesh(g, hairMat);
-    m.castShadow = castShadow;
-    attach(m);
-    disposables.push(g);
+  const part = (name: string, mat: THREE.Material, shadow = castShadow) => {
+    const p = base.parts[name];
+    if (p) skinned(buildPartGeometry(p, base, sculpt.topoDisp), mat, shadow);
+  };
+
+  // eyes, brows and lashes (fitted MakeHuman parts)
+  const eyeMat = createEyeMaterial(tex.iris, IRIS[seed % IRIS.length]);
+  disposables.push(eyeMat);
+  part("eyes", eyeMat, false);
+  if (!a.mask) {
+    const browStyle = seed % 4 === 0 ? "eyebrow_thick" : seed % 4 === 3 ? "eyebrow_thin" : "eyebrow_medium";
+    const browMat = createCardMaterial(tex[browStyle], a.hairColor, mean[browStyle], { sheen: 0.2 });
+    const lashMat = createCardMaterial(tex.eyelashes, "#120d0a", mean.eyelashes, { sheen: 0 });
+    disposables.push(browMat, lashMat);
+    part(browStyle, browMat, false);
+    part("eyelashes", lashMat, false);
   }
-  const eyeGeo = new THREE.SphereGeometry(0.0118, 20, 14);
-  const lidGeo = new THREE.SphereGeometry(0.0127, 20, 8, 0, Math.PI * 2, 0, Math.PI * 0.36);
-  const eyeMat = createEyeMaterial(IRIS[seed % IRIS.length]);
-  const lidMat = new THREE.MeshStandardMaterial({ color: a.mask ? a.primaryColor : a.skinTone, roughness: 0.6 });
-  disposables.push(eyeGeo, lidGeo, eyeMat, lidMat);
-  for (const s of [1, -1]) {
-    const eye = new THREE.Mesh(eyeGeo, eyeMat);
-    eye.position.set(s * sculpt.eye.x, sculpt.eye.y, sculpt.eye.z - 0.0105);
-    const lid = new THREE.Mesh(lidGeo, lidMat);
-    lid.position.copy(eye.position);
-    lid.rotation.set(0.15, 0, 0);
-    attach(eye);
-    attach(lid);
+
+  // hair: MakeHuman hair cards for short, long and ponytail; a sculpted shell for mohawks
+  if (!a.mask) {
+    const card = { short: "hair_short", long: "hair_long", ponytail: "hair_ponytail" }[a.hairStyle as "short" | "long" | "ponytail"];
+    if (card && tex[card]) {
+      const hairMat = createCardMaterial(tex[card], a.hairColor, mean[card]);
+      disposables.push(hairMat);
+      part(card, hairMat);
+    }
+    const r = new THREE.Vector3();
+    const shellMat = createHairMaterial(a.hairColor);
+    disposables.push(shellMat);
+    if (a.hairStyle === "mohawk") {
+      const g = buildShell(sculpt.geometry, (p) => hairMask("mohawk", r.copy(p), lm), 0.03);
+      if (g) skinned(g, shellMat);
+    }
   }
 
   return {
@@ -199,10 +196,10 @@ export function build(base: HumanBase, w: ModelSource, castShadow: boolean) {
 }
 
 export function WrestlerModel({ wrestler, driver, castShadow = true }: { wrestler: ModelSource; driver: MutableRefObject<RigDriver>; castShadow?: boolean }) {
-  const base = useHumanBase();
-  const key = JSON.stringify(wrestler.appearance) + (wrestler.id ?? "");
+  const assets = useHumanAssets();
+  const key = JSON.stringify(wrestler.appearance) + (wrestler.id ?? "") + (wrestler.age ?? "");
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const model = useMemo(() => (base ? build(base, wrestler, castShadow) : null), [base, key, castShadow]);
+  const model = useMemo(() => (assets ? build(assets, wrestler, castShadow) : null), [assets, key, castShadow]);
   useEffect(() => () => model?.dispose(), [model]);
   const scale = wrestler.heightIn / 74;
 

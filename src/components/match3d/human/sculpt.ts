@@ -1,19 +1,25 @@
 /**
- * Per-wrestler sculpt of the shared base mesh. Every vertex belongs (through
- * its skin weights) to body segments such as torso, upper arm or shin. Within a
- * segment it has cylindrical coordinates (t along the bone, φ around it, with
- * φ = 0 facing the character's front and +π/2 its left), so muscles, fat and
- * gear are shaped as radial scaling plus Gaussian bumps along the normal,
- * blended by skin weight so joints stay seamless. Face shape and gear volume
- * (pants, boots, pads, gloves) are sculpted the same way. Also outputs the
- * paint coordinates the skin/gear shader uses.
+ * Per-wrestler sculpt of the shared MakeHuman base.
+ *
+ * 1. Morphs: MakeHuman's anatomical targets (macro build, race structure,
+ *    face and body details) are mixed from the wrestler's appearance, so jaw,
+ *    chin, nose, brow, cheeks, head shape, pecs, lats, arms and legs come from
+ *    real anatomy rather than hand-made bumps.
+ * 2. Hypertrophy: wrestlers are bigger than any civilian body, so a lighter
+ *    procedural layer adds radial bulk and definition per body segment
+ *    (cylindrical coordinates t along the bone, φ around it, φ = 0 front and
+ *    +π/2 the model's left), blended by skin weight so joints stay seamless.
+ * 3. Gear volume: pants, boots, pads, gloves.
+ * Joints follow the reshaped skin, and the paint coordinates for the
+ * skin/gear shader are written alongside.
  */
 import * as THREE from "three";
 import { faceFor } from "@/engine/appearance";
+import { hashString } from "@/engine/rng";
 import type { Appearance, FaceShape } from "@/engine/types";
+import type { HumanBase } from "./base";
 
 export { faceFor };
-import type { HumanBase } from "./base";
 
 export interface Landmarks {
   headTop: number;
@@ -35,12 +41,12 @@ export interface Landmarks {
 
 export interface Sculpted {
   geometry: THREE.BufferGeometry;
-  /** World-space rest offsets for bones (shoulder width, hip width). */
+  /** Parent-relative rest offsets for bones so joints follow the reshaped body. */
   boneShift: Map<number, THREE.Vector3>;
   landmarks: Landmarks;
   face: FaceShape;
-  /** Left eye socket front after sculpting (mirror x for the right). */
-  eye: THREE.Vector3;
+  /** Final displacement of every topology vertex (parts bound to the body follow it). */
+  topoDisp: Float32Array;
 }
 
 interface Bump {
@@ -88,9 +94,10 @@ const smooth = (e0: number, e1: number, x: number) => {
   return k * k * (3 - 2 * k);
 };
 const gauss = (x: number, s: number) => Math.exp(-(x * x) / (2 * s * s));
+const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
 /** Rest world positions of every bone. */
-export function restBonePositions(base: HumanBase) {
+export function restBonePositions(base: Pick<HumanBase, "bones">) {
   const world: THREE.Matrix4[] = [];
   base.bones.forEach((b, i) => {
     const local = new THREE.Matrix4().compose(b.position, b.quaternion, new THREE.Vector3(1, 1, 1));
@@ -99,7 +106,86 @@ export function restBonePositions(base: HumanBase) {
   return world.map((m) => new THREE.Vector3().setFromMatrixPosition(m));
 }
 
-export function sculptWrestler(base: HumanBase, a: Appearance, id: string): Sculpted {
+/** Morph weights for a wrestler: build from the body sliders, face from the face sliders and the id. */
+export function morphWeights(a: Appearance, face: FaceShape, id: string, age = 30) {
+  const w: Record<string, number> = {};
+  const bi = (name: string, s: number) => {
+    if (s > 0) w[`${name}+`] = (w[`${name}+`] ?? 0) + s;
+    else if (s < 0) w[`${name}-`] = (w[`${name}-`] ?? 0) - s;
+  };
+  const m = a.muscle;
+  const f = a.bodyFat;
+  const b = a.bulk;
+  const armK = 0.8 + a.armSize * 0.4;
+  const legK = 0.82 + a.legSize * 0.36;
+  const def = a.definition * (1 - f * 0.8);
+  // macro build: wrestlers sit past MakeHuman's most muscular setting
+  bi("muscle", m > 0.4 ? (m - 0.4) * 2.4 : (m - 0.4) * 1.5);
+  bi("weight", f > 0.2 ? (f - 0.2) * 1.5 : (f - 0.2) * 2.5);
+  w["proportions+"] = 0.55 + b * 0.35;
+  if (age > 34) w["age+"] = clamp((age - 34) / 30, 0, 0.8);
+  // race structure: a stable per-wrestler mix gives every face its own bone structure
+  const h = hashString(`${id}:race`);
+  const r = [((h >>> 0) % 1000) / 1000, ((h >>> 10) % 1000) / 1000, ((h >>> 20) % 1000) / 1000];
+  const rs = r[0] + r[1] + r[2] || 1;
+  w.race_african = (r[0] / rs) * 0.9;
+  w.race_asian = (r[1] / rs) * 0.9;
+  w.race_caucasian = (r[2] / rs) * 0.9;
+  // body details
+  bi("pecs", m * 1.3 - 0.1);
+  bi("lats", m * 1.1 + (a.shoulderWidth - 0.5));
+  bi("vshape", clamp(m * 0.8 + (a.shoulderWidth - 0.5) * 1.6 - f * 0.6, -1, 1.4));
+  bi("shoulders", (a.shoulderWidth - 0.5) * 1.6 + b * 0.4);
+  bi("chest", m * 0.5 + b * 0.5 + f * 0.3 - 0.2);
+  bi("waist", f * 1.4 + b * 0.3 - 0.45);
+  bi("belly", f > 0.3 ? (f - 0.3) * 2 : 0);
+  bi("abs", def * 1.2 - 0.2);
+  bi("glutes", m * 0.6 + f * 0.4 - 0.2);
+  bi("biceps", m * armK * 1.4 - 0.2);
+  bi("delts", m * 1.4 + b * 0.2 - 0.2);
+  bi("forearms", m * armK * 1.1 - 0.1);
+  bi("armFat", f * 0.9 - 0.15);
+  bi("thighs", m * legK * 1.2 - 0.1);
+  bi("thighFat", f * 0.9 - 0.15);
+  bi("calves", m * legK - 0.1);
+  bi("neck", m * 1.2 + b * 0.6 - 0.2);
+  if (f > 0.4) w.neckDouble = (f - 0.4) * 1.6;
+  // face: sliders first, then stable per-wrestler variety
+  const fc = (x: number) => (x - 0.5) * 2;
+  const hf = hashString(`${id}:features`);
+  const rf = (shift: number) => (((hf >>> shift) % 1000) / 1000 - 0.5) * 2; // −1..1
+  bi("jaw", fc(face.jaw) * 1.2 + b * 0.4);
+  bi("jawBones", fc(face.jaw) * 0.8 + 0.2);
+  bi("chin", fc(face.chin) * 1.1);
+  bi("chinHeight", rf(1) * 0.6);
+  bi("browDepth", fc(face.brow) * 1.0 + 0.3);
+  bi("browAngle", rf(3) * 0.6 - 0.2);
+  bi("noseSize", fc(face.nose) * 0.9);
+  bi("noseHump", rf(5) * 0.8);
+  bi("noseFlare", rf(7) * 0.7);
+  bi("noseTip", rf(9) * 0.6);
+  bi("cheekBones", fc(face.cheeks) * 1.0);
+  bi("cheekVolume", f * 0.8 - 0.3);
+  bi("headWidth", fc(face.width) * 0.8);
+  bi("headLength", fc(face.length) * 0.8);
+  bi("headDepth", rf(11) * 0.4);
+  bi("headFat", f * 0.9 - 0.3);
+  bi("eyeSize", rf(13) * 0.5 - 0.15);
+  bi("eyeOpen", rf(15) * 0.5 - 0.25);
+  bi("eyeBags", (age - 32) / 30);
+  bi("mouthWidth", rf(17) * 0.6);
+  bi("lips", rf(19) * 0.7);
+  bi("ears", rf(21) * 0.5);
+  bi("temples", rf(23) * 0.5);
+  bi("forehead", rf(25) * 0.5);
+  // one or two head shapes, leaning square for strong jaws
+  const shapes = ["square", "round", "oval", "rectangular", "invertedtriangular"];
+  w[`head_${shapes[hf % shapes.length]}`] = 0.5;
+  w.head_square = (w.head_square ?? 0) + Math.max(0, fc(face.jaw)) * 0.7;
+  return w;
+}
+
+export function sculptWrestler(base: HumanBase, a: Appearance, id: string, age = 30): Sculpted {
   const bonesW = restBonePositions(base);
   const B = (n: string) => bonesW[base.boneIndex[n]];
   const bi = base.boneIndex;
@@ -109,26 +195,61 @@ export function sculptWrestler(base: HumanBase, a: Appearance, id: string): Scul
   const def = a.definition;
   const f = a.bodyFat;
   const b = a.bulk;
-  const sw = a.shoulderWidth;
   const armK = 0.8 + a.armSize * 0.4;
   const legK = 0.82 + a.legSize * 0.36;
   const cut = def * (1 - f * 0.85);
 
-  // ── Landmarks from the rest skeleton and mesh ──
+  // ── 1. Morphs on the topology ──
+  const T = base.topoCount;
+  const topoRest = new Float32Array(T * 3);
+  for (let t = 0; t < T; t++) {
+    const i = base.topoFirst[t];
+    topoRest[t * 3] = base.positions[i * 3];
+    topoRest[t * 3 + 1] = base.positions[i * 3 + 1];
+    topoRest[t * 3 + 2] = base.positions[i * 3 + 2];
+  }
+  const morphDisp = new Float32Array(T * 3);
+  for (const [name, weight] of Object.entries(morphWeights(a, face, id, age))) {
+    const mo = base.morphs[name];
+    if (!mo || Math.abs(weight) < 1e-3) continue;
+    for (let k = 0; k < mo.indices.length; k++) {
+      const t = mo.indices[k];
+      morphDisp[t * 3] += mo.deltas[k * 3] * weight;
+      morphDisp[t * 3 + 1] += mo.deltas[k * 3 + 1] * weight;
+      morphDisp[t * 3 + 2] += mo.deltas[k * 3 + 2] * weight;
+    }
+  }
+
+  // ── Landmarks (rest space; the shader paints in rest coordinates) ──
   const P = base.positions;
   let headTop = 0;
   for (let i = 1; i < P.length; i += 3) headTop = Math.max(headTop, P[i]);
+  const eyes = base.parts.eyes;
+  let ex = 0;
+  let ey = 0;
+  let ez = -1;
+  let en = 0;
+  if (eyes) {
+    for (let i = 0; i < eyes.positions.length; i += 3) {
+      if (eyes.positions[i] <= 0) continue;
+      ex += eyes.positions[i];
+      ey += eyes.positions[i + 1];
+      ez = Math.max(ez, eyes.positions[i + 2]);
+      en++;
+    }
+  }
+  const eyeX = en ? ex / en : 0.032;
+  const eyeY = en ? ey / en : headTop - 0.11;
+  const eyeZ = en ? ez : 0.1;
+  // chin: lowest front-centre point of the head
+  let chinY = eyeY - 0.12;
+  for (let i = 0; i < P.length; i += 3) {
+    if (Math.abs(P[i]) < 0.012 && P[i + 2] > eyeZ - 0.035 && P[i + 1] < eyeY - 0.05 && P[i + 1] > eyeY - 0.2) chinY = Math.min(chinY, P[i + 1]);
+  }
+  const mouthY = chinY + (eyeY - chinY) * 0.39;
   const neckY = B("spine004").y;
-  const headLen = headTop - neckY;
-  const eyeY = headTop - headLen * 0.4;
-  const mouthY = headTop - headLen * 0.63;
-  const chinY = headTop - headLen * 0.76;
   const pelvisY = B("spine").y;
-  const chestY = B("spine003").y;
-  // the face's front surface at eye height, slightly off-centre
-  let eyeZ = 0;
-  const eyeX = 0.032;
-  for (let i = 0; i < P.length; i += 3) if (Math.abs(Math.abs(P[i]) - eyeX) < 0.012 && Math.abs(P[i + 1] - eyeY) < 0.012) eyeZ = Math.max(eyeZ, P[i + 2]);
+  const chestY = B("spine003").y + (neckY - B("spine003").y) * 0.35;
 
   const landmarks: Landmarks = {
     headTop,
@@ -139,7 +260,7 @@ export function sculptWrestler(base: HumanBase, a: Appearance, id: string): Scul
     chinY,
     neckY,
     chestY,
-    navelY: pelvisY + (chestY - pelvisY) * 0.35,
+    navelY: pelvisY + (chestY - pelvisY) * 0.38,
     pelvisY,
     kneeY: B("shinL").y,
     ankleY: B("footL").y,
@@ -147,142 +268,105 @@ export function sculptWrestler(base: HumanBase, a: Appearance, id: string): Scul
     armB: [B("handL").clone(), B("handR").clone()],
   };
 
-  // ── Bone shifts: broader shoulders and hips move the joints, not just the skin ──
-  const shoulderOut = 0.012 * (sw - 0.5) * 2 + 0.032 * m + 0.016 * b + 0.01 * f;
-  const hipOut = 0.012 * f + 0.008 * b + 0.004 * m;
-  const boneShift = new Map<number, THREE.Vector3>();
-  boneShift.set(bi.upper_armL, new THREE.Vector3(shoulderOut, 0.004 * m, 0));
-  boneShift.set(bi.upper_armR, new THREE.Vector3(-shoulderOut, 0.004 * m, 0));
-  boneShift.set(bi.thighL, new THREE.Vector3(hipOut, 0, 0));
-  boneShift.set(bi.thighR, new THREE.Vector3(-hipOut, 0, 0));
-  // vertices follow the shift of the limb they belong to (descendants included)
-  const shiftOf = new Map<number, THREE.Vector3>();
-  const descend = (root: number, v: THREE.Vector3, k = 1) => {
-    const stack = [root];
-    while (stack.length) {
-      const i = stack.pop()!;
-      shiftOf.set(i, v.clone().multiplyScalar(k));
-      base.bones.forEach((bb, j) => bb.parent === i && stack.push(j));
-    }
-  };
-  for (const [i, v] of boneShift) descend(i, v);
-  shiftOf.set(bi.shoulderL, boneShift.get(bi.upper_armL)!.clone().multiplyScalar(0.55));
-  shiftOf.set(bi.shoulderR, boneShift.get(bi.upper_armR)!.clone().multiplyScalar(0.55));
-
-  // ── Segments ──
+  // ── 2. Hypertrophy segments ──
   type Seg = { a: THREE.Vector3; b: THREE.Vector3; bones: number[]; shape: (t: number, phi: number) => { kx: number; kz: number; k: number; bump: number } };
   const bones = (...names: string[]) => names.map((n) => bi[n]).filter((x) => x != null);
   const fingers = (s: string) => ["f_index", "f_middle", "f_ring", "f_pinky"].flatMap((n) => [1, 2, 3].map((j) => `${n}0${j}${s}`)).concat([1, 2, 3].map((j) => `thumb0${j}${s}`));
 
-  const absA = (0.003 + def * 0.012 + m * 0.004) * (1 - f * 0.9);
+  const absA = (0.002 + def * 0.006) * (1 - f * 0.9);
   const torsoBumps: Bump[] = [
-    { t: 0.73, phi: 0.5, st: 0.085, stBelow: 0.03, sp: 0.42, a: 0.008 + m * 0.045 },
-    { t: 0.73, phi: -0.5, st: 0.085, stBelow: 0.03, sp: 0.42, a: 0.008 + m * 0.045 },
-    { t: 0.73, phi: 0, st: 0.12, sp: 0.07, a: -(0.003 + m * 0.014) },
-    ...[0.53, 0.43, 0.33, 0.23].flatMap((t, i) => [0.2, -0.2].map((phi) => ({ t, phi, st: 0.036, sp: 0.12, a: absA * (i === 3 ? 0.6 : 1) }))),
-    { t: 0.38, phi: 0, st: 0.22, sp: 0.05, a: -def * 0.004 * (1 - f * 0.8) },
-    { t: 0.28, phi: 1.05, st: 0.1, sp: 0.3, a: m * 0.006 + f * 0.012 },
-    { t: 0.28, phi: -1.05, st: 0.1, sp: 0.3, a: m * 0.006 + f * 0.012 },
-    ...[0.56, 0.62].flatMap((t) => [0.98, -0.98].map((phi) => ({ t, phi, st: 0.022, sp: 0.1, a: cut * m * 0.004 }))),
-    { t: 0.64, phi: 1.9, st: 0.15, sp: 0.42, a: 0.004 + m * 0.022 },
-    { t: 0.64, phi: -1.9, st: 0.15, sp: 0.42, a: 0.004 + m * 0.022 },
-    { t: 0.8, phi: Math.PI - 0.55, st: 0.1, sp: 0.35, a: m * 0.012 },
-    { t: 0.8, phi: Math.PI + 0.55, st: 0.1, sp: 0.35, a: m * 0.012 },
-    { t: 0.5, phi: Math.PI, st: 0.3, sp: 0.07, a: -(0.003 + m * 0.006) },
-    { t: 0.25, phi: Math.PI - 0.2, st: 0.12, sp: 0.13, a: m * 0.008 },
-    { t: 0.25, phi: Math.PI + 0.2, st: 0.12, sp: 0.13, a: m * 0.008 },
-    { t: 0.95, phi: 1.2, st: 0.06, sp: 0.5, a: m * 0.03 + b * 0.008 },
-    { t: 0.95, phi: -1.2, st: 0.06, sp: 0.5, a: m * 0.03 + b * 0.008 },
-    { t: 0.93, phi: Math.PI, st: 0.07, sp: 0.9, a: m * 0.022 },
-    { t: 0.32, phi: 0, st: 0.16, sp: 1.0, a: f * 0.08 },
-    { t: 0.12, phi: 1.55, st: 0.08, sp: 0.4, a: f * 0.035 },
-    { t: 0.12, phi: -1.55, st: 0.08, sp: 0.4, a: f * 0.035 },
-    // glutes
-    { t: 0.02, phi: Math.PI - 0.45, st: 0.08, sp: 0.5, a: 0.004 + m * 0.012 + f * 0.01 },
-    { t: 0.02, phi: Math.PI + 0.45, st: 0.08, sp: 0.5, a: 0.004 + m * 0.012 + f * 0.01 },
+    // pec shelf and sternum line on top of MakeHuman's pectorals
+    { t: 0.68, phi: 0.5, st: 0.07, stBelow: 0.025, sp: 0.42, a: m * 0.012 },
+    { t: 0.68, phi: -0.5, st: 0.07, stBelow: 0.025, sp: 0.42, a: m * 0.012 },
+    { t: 0.68, phi: 0, st: 0.12, sp: 0.06, a: -(0.002 + m * 0.006) },
+    // six-pack and linea alba
+    ...[0.5, 0.41, 0.32, 0.23].flatMap((t, i) => [0.19, -0.19].map((phi) => ({ t, phi, st: 0.034, sp: 0.11, a: absA * (i === 3 ? 0.6 : 1) }))),
+    { t: 0.36, phi: 0, st: 0.22, sp: 0.045, a: -def * 0.003 * (1 - f * 0.8) },
+    // serratus
+    ...[0.52, 0.58].flatMap((t) => [0.98, -0.98].map((phi) => ({ t, phi, st: 0.02, sp: 0.1, a: cut * m * 0.003 }))),
+    // traps up to the neck
+    { t: 0.95, phi: 1.2, st: 0.06, sp: 0.5, a: m * 0.018 + b * 0.005 },
+    { t: 0.95, phi: -1.2, st: 0.06, sp: 0.5, a: m * 0.018 + b * 0.005 },
+    { t: 0.92, phi: Math.PI, st: 0.07, sp: 0.9, a: m * 0.012 },
   ];
   const torsoKx = curve([
-    [0, 1.0 + 0.1 * f + 0.07 * b + 0.04 * m],
-    [0.28, 0.94 + 0.06 * m + 0.38 * f + 0.12 * b],
-    [0.55, 1.0 + 0.12 * m + 0.2 * f + 0.1 * b],
-    [0.74, 1.02 + 0.2 * m + 0.08 * (sw - 0.5) + 0.1 * b + 0.06 * f],
-    [0.92, 1.02 + 0.16 * m + 0.08 * b],
-    [1, 1.0 + 0.2 * m],
+    [0, 1.0 + 0.04 * b],
+    [0.3, 1.0 + 0.04 * m + 0.06 * b],
+    [0.7, 1.02 + 0.1 * m + 0.06 * b],
+    [0.92, 1.02 + 0.08 * m + 0.05 * b],
+    [1, 1.0 + 0.1 * m],
   ]);
   const torsoKz = curve([
-    [0, 1.0 + 0.12 * f + 0.06 * b + 0.06 * m],
-    [0.3, 0.95 + 0.05 * m + 0.6 * f + 0.1 * b],
-    [0.6, 1.0 + 0.12 * m + 0.25 * f + 0.08 * b],
-    [0.76, 1.02 + 0.2 * m + 0.08 * b + 0.06 * f],
-    [1, 1.0 + 0.14 * m],
+    [0, 1.0 + 0.04 * b],
+    [0.3, 1.0 + 0.03 * m + 0.05 * b],
+    [0.7, 1.02 + 0.1 * m + 0.05 * b],
+    [1, 1.0 + 0.08 * m],
   ]);
-
-  const armShape = (side: 1 | -1) => (t: number, phi: number) => {
-    const k = curve([
-      [0, 1.06 + 0.3 * m + 0.1 * b],
-      [0.45, 1.04 + 0.52 * m * armK + 0.12 * b + 0.14 * f],
-      [1, 1.02 + 0.26 * m * armK + 0.08 * b],
-    ])(t);
-    const bump = bumpField(
+  const armShape = (side: 1 | -1) => (t: number, phi: number) => ({
+    kx: 1,
+    kz: 1,
+    k: curve([
+      [0, 1.04 + 0.12 * m + 0.05 * b],
+      [0.45, 1.03 + 0.22 * m * armK + 0.06 * b],
+      [1, 1.02 + 0.1 * m * armK + 0.04 * b],
+    ])(t),
+    bump: bumpField(
       [
-        { t: 0.52, phi: 0.1 * side, st: 0.16, sp: 0.65, a: (0.003 + m * 0.02) * armK },
-        { t: 0.42, phi: Math.PI, st: 0.2, sp: 0.8, a: (0.002 + m * 0.016) * armK },
-        { t: 0.1, phi: Math.PI / 2, st: 0.12, sp: 0.9, a: m * 0.016 + b * 0.004 },
-        { t: 0.7, phi: Math.PI / 2, st: 0.12, sp: 0.4, a: m * 0.005 },
+        { t: 0.52, phi: 0.1 * side, st: 0.15, sp: 0.6, a: m * 0.01 * armK },
+        { t: 0.42, phi: Math.PI, st: 0.2, sp: 0.8, a: m * 0.008 * armK },
+        { t: 0.1, phi: Math.PI / 2, st: 0.12, sp: 0.9, a: m * 0.01 + b * 0.003 },
       ],
       t,
       phi,
-    );
-    return { kx: 1, kz: 1, k, bump };
-  };
-  const foreShape = (t: number, phi: number) => {
-    const k = curve([
-      [0, 1.04 + 0.34 * m * armK + 0.08 * b],
-      [0.35, 1.04 + 0.32 * m * armK + 0.08 * b + 0.05 * f],
-      [1, 1.02 + 0.12 * m + 0.05 * b],
-    ])(t);
-    const bump = bumpField([{ t: 0.22, phi: 0.9, st: 0.14, sp: 0.5, a: (0.002 + m * 0.01) * armK }], t, phi);
-    return { kx: 1, kz: 1, k, bump };
-  };
-  const handShape = () => ({ kx: 1, kz: 1, k: 1.06 + 0.1 * m + 0.08 * b, bump: 0 });
-  const thighShape = (side: 1 | -1) => (t: number, phi: number) => {
-    const k = curve([
-      [0, 1.04 + 0.22 * m * legK + 0.2 * f + 0.12 * b],
-      [0.4, 1.04 + 0.3 * m * legK + 0.2 * f + 0.12 * b],
-      [1, 1.02 + 0.12 * m + 0.06 * b + 0.06 * f],
-    ])(t);
-    const bump = bumpField(
+    ),
+  });
+  const foreShape = (t: number) => ({
+    kx: 1,
+    kz: 1,
+    k: curve([
+      [0, 1.03 + 0.16 * m * armK + 0.05 * b],
+      [1, 1.02 + 0.06 * m + 0.03 * b],
+    ])(t),
+    bump: 0,
+  });
+  const handShape = () => ({ kx: 1, kz: 1, k: 1.04 + 0.06 * m + 0.06 * b, bump: 0 });
+  const thighShape = (side: 1 | -1) => (t: number, phi: number) => ({
+    kx: 1,
+    kz: 1,
+    k: curve([
+      [0, 1.02 + 0.08 * m * legK + 0.06 * b],
+      [0.45, 1.03 + 0.12 * m * legK + 0.06 * b],
+      [1, 1.02 + 0.05 * m + 0.03 * b],
+    ])(t),
+    bump: bumpField(
       [
-        { t: 0.5, phi: 0, st: 0.2, sp: 0.4, a: m * 0.012 * legK },
-        { t: 0.5, phi: side * 0.95, st: 0.2, sp: 0.45, a: (0.002 + m * 0.014) * legK },
-        { t: 0.84, phi: -side * 0.5, st: 0.07, sp: 0.35, a: (0.002 + m * 0.012 * (0.5 + def * 0.5)) * legK },
-        { t: 0.42, phi: Math.PI, st: 0.22, sp: 0.6, a: (0.002 + m * 0.012) * legK },
+        { t: 0.82, phi: -side * 0.5, st: 0.07, sp: 0.35, a: m * 0.008 * (0.5 + def * 0.5) * legK },
+        { t: 0.5, phi: side * 0.95, st: 0.2, sp: 0.45, a: m * 0.008 * legK },
       ],
       t,
       phi,
-    );
-    return { kx: 1, kz: 1, k, bump };
-  };
-  const shinShape = (t: number, phi: number) => {
-    const k = curve([
-      [0, 1.02 + 0.14 * m + 0.06 * b],
-      [0.35, 1.03 + 0.18 * m + 0.08 * b + 0.06 * f],
-      [1, 1.0 + 0.04 * b],
-    ])(t);
-    const bump = bumpField(
+    ),
+  });
+  const shinShape = (t: number, phi: number) => ({
+    kx: 1,
+    kz: 1,
+    k: curve([
+      [0, 1.02 + 0.06 * m + 0.03 * b],
+      [0.35, 1.02 + 0.08 * m + 0.04 * b],
+      [1, 1.0 + 0.02 * b],
+    ])(t),
+    bump: bumpField(
       [
-        { t: 0.3, phi: Math.PI - 0.4, st: 0.1, stBelow: 0.15, sp: 0.4, a: (0.004 + m * 0.014) * legK },
-        { t: 0.3, phi: Math.PI + 0.4, st: 0.1, stBelow: 0.15, sp: 0.4, a: (0.004 + m * 0.014) * legK },
+        { t: 0.3, phi: Math.PI - 0.4, st: 0.1, stBelow: 0.15, sp: 0.4, a: m * 0.008 * legK },
+        { t: 0.3, phi: Math.PI + 0.4, st: 0.1, stBelow: 0.15, sp: 0.4, a: m * 0.008 * legK },
       ],
       t,
       phi,
-    );
-    return { kx: 1, kz: 1, k, bump };
-  };
-  const neckK = 1.04 + 0.3 * m + 0.12 * b + 0.08 * f;
+    ),
+  });
 
   const segs: Seg[] = [
-    { a: B("spine"), b: B("spine004"), bones: bones("spine", "spine001", "spine002", "spine003", "shoulderL", "shoulderR", "pelvisL", "pelvisR"), shape: (t, phi) => ({ kx: torsoKx(t), kz: torsoKz(t), k: 1, bump: bumpField(torsoBumps, t, phi) }) },
+    { a: B("spine"), b: B("spine004"), bones: bones("spine", "spine001", "spine002", "spine003", "shoulderL", "shoulderR"), shape: (t, phi) => ({ kx: torsoKx(t), kz: torsoKz(t), k: 1, bump: bumpField(torsoBumps, t, phi) }) },
     { a: B("upper_armL"), b: B("forearmL"), bones: bones("upper_armL"), shape: armShape(1) },
     { a: B("upper_armR"), b: B("forearmR"), bones: bones("upper_armR"), shape: armShape(-1) },
     { a: B("forearmL"), b: B("handL"), bones: bones("forearmL"), shape: foreShape },
@@ -298,13 +382,13 @@ export function sculptWrestler(base: HumanBase, a: Appearance, id: string): Scul
   const segOf = new Map<number, number>();
   segs.forEach((s, i) => s.bones.forEach((bn) => segOf.set(bn, i)));
 
-  // ── Per-vertex sculpt ──
   const n = P.length / 3;
   const out = new Float32Array(P.length);
   const aRegA = new Float32Array(n * 4); // torso, head, upper arm, forearm
   const aRegB = new Float32Array(n * 4); // hand, thigh, shin, foot
   const aLimb = new Float32Array(n * 4); // t along arm (0 shoulder..1 wrist, hand >1) or −1−t on legs, cos φ, sin φ, side
   const v = new THREE.Vector3();
+  const vr = new THREE.Vector3();
   const nrm = new THREE.Vector3();
   const rel = new THREE.Vector3();
   const axis = new THREE.Vector3();
@@ -313,18 +397,25 @@ export function sculptWrestler(base: HumanBase, a: Appearance, id: string): Scul
   const disp = new THREE.Vector3();
   const Z = new THREE.Vector3(0, 0, 1);
   const segW = new Float32Array(segs.length);
-  const fc = (x: number) => (x - 0.5) * 2; // −1..1
-
   const outfit = a.outfit;
   const fullLegs = outfit === "tights" || outfit === "pants" || outfit === "bodysuit";
+  // bigger heads and hands on bigger bodies so they read at camera distance
+  const headScale = 0.05 + b * 0.04 + m * 0.03;
+  // wrestler necks: thick, flowing into the traps
+  const neckK = 1.1 + 0.32 * m + 0.16 * b + 0.08 * f;
+  const headPivot = B("spine004");
+  // final displacement per topology vertex (written once; UV-seam duplicates must read morphDisp, not this)
+  const topoDisp = new Float32Array(T * 3);
+  const done = new Uint8Array(T);
 
   for (let i = 0; i < n; i++) {
-    v.fromArray(P, i * 3);
+    const topo = base.topo[i];
+    vr.fromArray(P, i * 3);
+    v.set(vr.x + morphDisp[topo * 3], vr.y + morphDisp[topo * 3 + 1], vr.z + morphDisp[topo * 3 + 2]);
     nrm.fromArray(base.normals, i * 3);
     segW.fill(0);
     let headW = 0;
     disp.set(0, 0, 0);
-    const shift = new THREE.Vector3();
     for (let k = 0; k < 4; k++) {
       const bn = base.skinIndex[i * 4 + k];
       const w = base.skinWeight[i * 4 + k];
@@ -332,10 +423,7 @@ export function sculptWrestler(base: HumanBase, a: Appearance, id: string): Scul
       const s = segOf.get(bn);
       if (s != null) segW[s] += w;
       if (headBones.has(bn)) headW += w;
-      const sh = shiftOf.get(bn);
-      if (sh) shift.addScaledVector(sh, w);
     }
-    // body segments
     let limbT = 0;
     let limbPhi = 0;
     let limbSide = 0;
@@ -347,24 +435,25 @@ export function sculptWrestler(base: HumanBase, a: Appearance, id: string): Scul
       axis.subVectors(seg.b, seg.a);
       const L = axis.length();
       axis.divideScalar(L);
-      rel.subVectors(v, seg.a);
+      // shape from rest coordinates (stable), applied to the morphed position
+      rel.subVectors(vr, seg.a);
       const along = rel.dot(axis);
       const t = along / L;
-      rel.addScaledVector(axis, -along); // radial
+      rel.addScaledVector(axis, -along);
       fwd.copy(Z).addScaledVector(axis, -axis.dot(Z));
       if (fwd.lengthSq() < 1e-4) fwd.set(0, 1, 0);
       fwd.normalize();
       sideV.crossVectors(fwd, axis).normalize();
       const phi = Math.atan2(rel.dot(sideV), rel.dot(fwd));
-      const sh = seg.shape(Math.max(0, Math.min(1, t)), phi);
+      const sh = seg.shape(clamp(t, 0, 1), phi);
+      // radial direction of the morphed vertex
+      rel.subVectors(v, seg.a);
+      rel.addScaledVector(axis, -rel.dot(axis));
       if (s === 0) {
         disp.x += w * (sh.kx - 1) * rel.x;
         disp.z += w * (sh.kz - 1) * rel.z;
-      } else {
-        disp.addScaledVector(rel, w * (sh.k - 1));
-      }
+      } else disp.addScaledVector(rel, w * (sh.k - 1));
       disp.addScaledVector(nrm, w * sh.bump);
-      // paint coordinates along the whole arm / leg
       if (s >= 1 && s <= 6 && w > 0.3) {
         const isFore = s === 3 || s === 4;
         const isHand = s === 5 || s === 6;
@@ -375,108 +464,85 @@ export function sculptWrestler(base: HumanBase, a: Appearance, id: string): Scul
         if (isFore) limbSide = s === 3 ? 1 : -1;
       }
       if (s >= 7 && w > 0.3) {
-        const isShin = s >= 9;
-        limbT = isShin ? 0.5 + t * 0.5 : t * 0.5;
+        limbT = s >= 9 ? 0.5 + t * 0.5 : t * 0.5;
         limbPhi = phi;
         limbSide = s % 2 === 1 ? 1 : -1;
         limbIsLeg = 1;
       }
     }
-    // neck and head
     if (headW > 0.002) {
-      const y = v.y;
-      const cz = v.z;
-      const front = Math.max(0, cz) / 0.1;
-      // neck thickness below the jaw
-      const neckMask = 1 - smooth(chinY - 0.05, chinY - 0.01, y);
-      const nb = B("spine004");
-      disp.x += headW * neckMask * (neckK - 1) * (v.x - nb.x);
-      disp.z += headW * neckMask * (neckK - 1) * 0.85 * (v.z - nb.z);
-      // head proportions
-      const headMask = smooth(chinY - 0.02, chinY + 0.03, y);
-      const hc = (eyeY + chinY) / 2;
-      // bigger heads on bigger bodies so they don't look pinned on
-      const hs = 0.06 + b * 0.05 + m * 0.03;
-      disp.x += headW * headMask * hs * v.x;
-      disp.y += headW * headMask * hs * (y - chinY);
-      disp.z += headW * headMask * hs * (v.z - B("spine005").z);
-      disp.x += headW * headMask * fc(face.width) * 0.08 * v.x;
-      disp.y += headW * headMask * fc(face.length) * 0.05 * (y - hc);
-      // jaw: wider and squarer low on the face
-      const jawMask = gauss(y - (chinY + mouthY) / 2, 0.022) * headMask;
-      disp.x += headW * jawMask * (0.06 + fc(face.jaw) * 0.18 + b * 0.05) * v.x;
-      // a defined jawline: the jaw stands proud of the neck, with a recess underneath
-      const underJaw = gauss(y - (chinY - 0.012), 0.008) * smooth(-0.04, 0.0, v.z);
-      disp.addScaledVector(nrm, -headW * underJaw * 0.006);
-      disp.addScaledVector(nrm, headW * gauss(y - (chinY + 0.006), 0.009) * smooth(0.02, 0.05, Math.abs(v.x)) * (0.004 + fc(face.jaw) * 0.003));
-      // facial convexity: the middle of the face comes forward, the outer cheeks fall back
-      const faceBand = smooth(chinY - 0.005, chinY + 0.02, y) * (1 - smooth(eyeY + 0.03, eyeY + 0.06, y)) * front;
-      disp.z += headW * faceBand * (gauss(v.x, 0.03) * 0.012 - smooth(0.045, 0.07, Math.abs(v.x)) * 0.008);
-      // soften the boxy corners of the base head
-      const corner = smooth(0.05, 0.075, Math.abs(v.x)) * smooth(0.02, 0.06, Math.abs(v.z - B("spine005").z));
-      disp.x -= headW * headMask * corner * 0.008 * Math.sign(v.x);
-      // rounder cranium above the brow
-      const crown = smooth(eyeY + 0.01, eyeY + 0.05, y) * (1 - smooth(headTop - 0.03, headTop, y));
-      disp.x += headW * crown * 0.05 * v.x;
-      disp.z += headW * crown * 0.04 * (v.z - B("spine005").z);
-      // chin forward / down
-      disp.z += headW * gauss(y - chinY - 0.012, 0.014) * gauss(v.x, 0.022) * front * (0.004 + fc(face.chin) * 0.006);
-      // brow ridge
-      disp.z += headW * gauss(y - (eyeY + 0.022), 0.008) * gauss(Math.abs(v.x) - 0.03, 0.025) * front * (0.006 + fc(face.brow) * 0.004);
-      // eye sockets
-      disp.z -= headW * gauss(y - eyeY, 0.009) * gauss(Math.abs(v.x) - eyeX, 0.012) * front * 0.007;
-      // nose: bridge + tip + nostrils
-      const noseY = (eyeY + mouthY) / 2;
-      disp.z += headW * gauss(v.x, 0.008 + face.nose * 0.004) * front * (gauss(y - noseY, 0.016) * (0.014 + face.nose * 0.008) + gauss(y - (eyeY - 0.004), 0.01) * 0.004);
-      disp.z += headW * gauss(Math.abs(v.x) - 0.012, 0.005) * gauss(y - (noseY - 0.008), 0.006) * front * 0.004;
-      // cheekbones
-      disp.addScaledVector(nrm, headW * gauss(y - (eyeY - 0.022), 0.012) * gauss(Math.abs(v.x) - 0.048, 0.016) * (0.002 + face.cheeks * 0.005));
-      // lips
-      disp.z += headW * gauss(y - mouthY, 0.005) * gauss(v.x, 0.016) * front * 0.0035;
-      disp.z -= headW * gauss(y - (mouthY - 0.006), 0.0025) * gauss(v.x, 0.02) * front * 0.0015;
-      // ears
-      disp.x += headW * gauss(y - (eyeY - 0.01), 0.018) * gauss(v.z + 0.005, 0.014) * Math.sign(v.x) * smooth(0.055, 0.07, Math.abs(v.x)) * 0.008;
+      const below = 1 - smooth(chinY - 0.035, chinY + 0.0, vr.y);
+      disp.x += headW * below * (neckK - 1) * (v.x - headPivot.x);
+      disp.z += headW * below * (neckK - 1) * 0.9 * (v.z - headPivot.z - 0.01);
+      const above = smooth(chinY - 0.03, chinY + 0.02, vr.y);
+      disp.x += headW * above * headScale * (v.x - headPivot.x);
+      disp.y += headW * above * headScale * (v.y - chinY);
+      disp.z += headW * above * headScale * (v.z - headPivot.z);
     }
 
-    // ── Gear volume ──
+    // ── 3. Gear volume ──
     const thighW = segW[7] + segW[8];
     const shinW = segW[9] + segW[10];
     if (outfit === "pants") {
-      const legMask = (thighW + shinW) * smooth(0.06, 0.14, v.y);
-      disp.addScaledVector(nrm, legMask * (0.012 + 0.006 * Math.sin(v.y * 40 + v.x * 30)));
+      const legMask = (thighW + shinW) * smooth(0.06, 0.14, vr.y);
+      disp.addScaledVector(nrm, legMask * (0.014 + 0.006 * Math.sin(vr.y * 40 + vr.x * 30)));
     }
     if (fullLegs && outfit !== "pants") disp.addScaledVector(nrm, (thighW + shinW) * 0.0015);
-    // boots up to mid-shin, kneepads, elbow pads, gloves
     const ankle = landmarks.ankleY;
     const bootTop = ankle + (landmarks.kneeY - ankle) * 0.55;
-    if (v.y < bootTop) disp.addScaledVector(nrm, 0.006 * smooth(bootTop, bootTop - 0.02, v.y));
-    if (a.kneepads) disp.addScaledVector(nrm, (thighW + shinW) * 0.012 * gauss(v.y - landmarks.kneeY, 0.03) * smooth(-0.3, 0.6, Math.cos(limbPhi)));
+    if (vr.y < bootTop) disp.addScaledVector(nrm, 0.006 * smooth(bootTop, bootTop - 0.02, vr.y));
+    if (a.kneepads) disp.addScaledVector(nrm, (thighW + shinW) * 0.013 * gauss(vr.y - landmarks.kneeY, 0.03) * smooth(-0.3, 0.6, Math.cos(limbPhi)));
     if (a.elbowPads && limbIsLeg === 0 && limbSide !== 0) disp.addScaledVector(nrm, 0.008 * gauss(limbT - 0.5, 0.05) * smooth(-0.2, 0.6, -Math.cos(limbPhi)));
     if (a.gloves && limbT > 0.97 && limbIsLeg === 0) disp.addScaledVector(nrm, 0.003);
 
-    out[i * 3] = v.x + disp.x + shift.x;
-    out[i * 3 + 1] = v.y + disp.y + shift.y;
-    out[i * 3 + 2] = v.z + disp.z + shift.z;
+    out[i * 3] = v.x + disp.x;
+    out[i * 3 + 1] = v.y + disp.y;
+    out[i * 3 + 2] = v.z + disp.z;
+    if (!done[topo]) {
+      done[topo] = 1;
+      topoDisp[topo * 3] = out[i * 3] - vr.x;
+      topoDisp[topo * 3 + 1] = out[i * 3 + 1] - vr.y;
+      topoDisp[topo * 3 + 2] = out[i * 3 + 2] - vr.z;
+    }
     aRegA.set([segW[0], headW, segW[1] + segW[2], segW[3] + segW[4]], i * 4);
     aRegB.set([segW[5] + segW[6], thighW, shinW, Math.max(0, 1 - segW.reduce((s2, x) => s2 + x, 0) - headW)], i * 4);
     aLimb.set([limbIsLeg ? -1 - limbT : limbT, Math.cos(limbPhi), Math.sin(limbPhi), limbSide], i * 4);
   }
 
-  // where the eye socket ended up after sculpting
-  const eye = new THREE.Vector3();
-  let eyeN = 0;
-  for (let i = 0; i < n; i++) {
-    const dx = P[i * 3] - eyeX;
-    const dy = P[i * 3 + 1] - eyeY;
-    const dz = P[i * 3 + 2] - eyeZ;
-    if (dx * dx + dy * dy + dz * dz < 0.012 * 0.012) {
-      eye.x += out[i * 3] - P[i * 3];
-      eye.y += out[i * 3 + 1] - P[i * 3 + 1];
-      eye.z += out[i * 3 + 2] - P[i * 3 + 2];
-      eyeN++;
+  // ── Joints follow the skin: each bone moves with the skin around its head ──
+  const absShift = bonesW.map((head, bIdx) => {
+    const name = base.bones[bIdx].name;
+    if (/^(f_|thumb)/.test(name)) return null; // fingers ride on the hand
+    const s = new THREE.Vector3();
+    let wsum = 0;
+    const r = name.startsWith("spine") ? 0.09 : 0.06;
+    for (let t = 0; t < T; t++) {
+      const dx = topoRest[t * 3] - head.x;
+      const dy = topoRest[t * 3 + 1] - head.y;
+      const dz = topoRest[t * 3 + 2] - head.z;
+      const d2 = dx * dx + dy * dy + dz * dz;
+      if (d2 > r * r) continue;
+      const w = 1 - Math.sqrt(d2) / r;
+      s.x += topoDisp[t * 3] * w;
+      s.y += topoDisp[t * 3 + 1] * w;
+      s.z += topoDisp[t * 3 + 2] * w;
+      wsum += w;
     }
-  }
-  eye.divideScalar(Math.max(1, eyeN)).add(new THREE.Vector3(eyeX, eyeY, eyeZ));
+    return wsum > 0 ? s.divideScalar(wsum) : new THREE.Vector3();
+  });
+  const resolved = absShift.map((s, i) => {
+    let k = i;
+    while (!s && base.bones[k].parent >= 0) {
+      k = base.bones[k].parent;
+      s = absShift[k];
+    }
+    return s ?? new THREE.Vector3();
+  });
+  const boneShift = new Map<number, THREE.Vector3>();
+  base.bones.forEach((bn, i) => {
+    const rel2 = bn.parent >= 0 ? resolved[i].clone().sub(resolved[bn.parent]) : resolved[i].clone();
+    if (rel2.lengthSq() > 1e-8) boneShift.set(i, rel2);
+  });
 
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.BufferAttribute(out, 3));
@@ -490,8 +556,8 @@ export function sculptWrestler(base: HumanBase, a: Appearance, id: string): Scul
   geometry.setIndex(new THREE.BufferAttribute(base.index, 1));
   smoothNormals(geometry, base.topo, base.topoCount);
   geometry.computeBoundingSphere();
-  geometry.boundingSphere!.radius *= 1.6; // posed limbs reach further than the bind pose
-  return { geometry, boneShift, landmarks, face, eye };
+  geometry.boundingSphere!.radius *= 1.6;
+  return { geometry, boneShift, landmarks, face, topoDisp };
 }
 
 /** Normals averaged over welded topology so UV seams don't show. */

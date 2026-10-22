@@ -1,23 +1,41 @@
 /**
- * The shared human base: a CC0 rigged male mesh (Godot Male Base Mesh,
- * github.com/BoQsc/Godot-Male-Base-Mesh) with a full Rigify-style skeleton
- * including three-joint fingers. It is loaded once, turned to face +Z, scaled
- * so a 74 in (1.88 m) wrestler stands on y = 0, and smoothed with two levels of
- * Loop subdivision that carries skin weights and UVs along.
+ * The shared human base, baked from MakeHuman (CC0) by scripts/blender/bake_human.py:
+ * a 13k-vertex male body on the "game_engine" skeleton (fingers included), 100
+ * sparse anatomical morphs (macro build, race structure, face and body details),
+ * and fitted parts (eyes, brows, lashes, hair). Loaded once from
+ * /models/human.bin, scaled so a 74 in (1.88 m) wrestler stands on y = 0.
  */
 import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 export interface BoneRest {
   name: string;
   parent: number;
-  /** Rest local transform in armature space units (game metres after scaling). */
+  /** Rest local transform relative to the parent bone (game metres). */
   position: THREE.Vector3;
   quaternion: THREE.Quaternion;
 }
 
+export interface Morph {
+  name: string;
+  /** Topology vertex ids and their deltas (metres). */
+  indices: Uint16Array;
+  deltas: Float32Array;
+}
+
+export interface Part {
+  name: string;
+  kind: string;
+  positions: Float32Array;
+  uvs: Float32Array;
+  index: Uint32Array;
+  /** Nearest body topology vertex for each part vertex (follows morphs, sculpt and skinning). */
+  bind: Uint32Array;
+  topo: Uint32Array;
+  topoCount: number;
+}
+
 export interface HumanBase {
-  /** Smoothed bind-pose geometry, game space (+Z forward, +X = model's left, feet at y = 0, 1.88 m tall). */
+  /** Bind-pose geometry, game space (+Z forward, +X = model's left, feet at y = 0, 1.88 m tall). */
   positions: Float32Array;
   normals: Float32Array;
   uvs: Float32Array;
@@ -27,208 +45,194 @@ export interface HumanBase {
   /** For each vertex, the welded topology id (UV-seam duplicates share one). */
   topo: Uint32Array;
   topoCount: number;
+  /** One render vertex per topology vertex (for looking up per-topology data). */
+  topoFirst: Uint32Array;
   bones: BoneRest[];
   boneIndex: Record<string, number>;
+  morphs: Record<string, Morph>;
+  parts: Record<string, Part>;
+  textures: Record<string, string>;
 }
 
-export const BASE_URL = "/models/base-male.glb";
+export const BASE_URL = "/models/human.bin";
 export const BASE_HEIGHT = 1.88;
 
 let pending: Promise<HumanBase> | null = null;
 export function loadHumanBase(): Promise<HumanBase> {
-  pending ??= new Promise<HumanBase>((resolve, reject) => {
-    new GLTFLoader().load(BASE_URL, (gltf) => resolve(prepare(gltf.scene)), undefined, reject);
-  });
+  pending ??= fetch(BASE_URL)
+    .then((r) => {
+      if (!r.ok) throw new Error(`human base: HTTP ${r.status}`);
+      return r.arrayBuffer();
+    })
+    .then(parseHumanBase);
   return pending;
 }
 
-export function prepare(scene: THREE.Object3D): HumanBase {
-  scene.updateMatrixWorld(true);
-  let skinned: THREE.SkinnedMesh | null = null;
-  scene.traverse((o) => {
-    if ((o as THREE.SkinnedMesh).isSkinnedMesh && !skinned) skinned = o as THREE.SkinnedMesh;
-  });
-  if (!skinned) throw new Error("base mesh has no skinned mesh");
-  const mesh = skinned as THREE.SkinnedMesh;
-  const geo = mesh.geometry;
-  const skel = mesh.skeleton;
+interface Accessor {
+  offset: number;
+  count: number;
+  type: string;
+}
 
-  // glb faces +X; turn it to face +Z (−90° about Y) and put the feet on the floor.
-  const turn = new THREE.Matrix4().makeRotationY(-Math.PI / 2);
-  const pos = geo.getAttribute("position") as THREE.BufferAttribute;
-  // Rendered rest positions (bind space → world), exactly as three.js would skin them.
-  const world: THREE.Vector3[] = [];
-  for (let i = 0; i < pos.count; i++) world.push(mesh.applyBoneTransform(i, new THREE.Vector3().fromBufferAttribute(pos, i)).applyMatrix4(mesh.matrixWorld));
-  const box = new THREE.Box3().setFromPoints(world);
-  const scale = BASE_HEIGHT / (box.max.y - box.min.y);
-  const toGame = new THREE.Matrix4().makeScale(scale, scale, scale).multiply(turn).multiply(new THREE.Matrix4().makeTranslation(0, -box.min.y, 0));
+export function parseHumanBase(buf: ArrayBuffer): HumanBase {
+  const dv = new DataView(buf);
+  if (String.fromCharCode(dv.getUint8(0), dv.getUint8(1), dv.getUint8(2), dv.getUint8(3)) !== "RSHM") throw new Error("not a human.bin file");
+  const jsonLen = dv.getUint32(4, true);
+  const header = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 8, jsonLen)));
+  const binStart = 8 + jsonLen;
+  const read = (a: Accessor) => {
+    const at = binStart + a.offset;
+    switch (a.type) {
+      case "float32":
+        return new Float32Array(buf.slice(at, at + a.count * 4));
+      case "uint16":
+        return new Uint16Array(buf.slice(at, at + a.count * 2));
+      case "int16":
+        return new Int16Array(buf.slice(at, at + a.count * 2));
+      case "uint32":
+        return new Uint32Array(buf.slice(at, at + a.count * 4));
+      case "uint8":
+        return new Uint8Array(buf.slice(at, at + a.count));
+      default:
+        throw new Error(`unknown accessor type ${a.type}`);
+    }
+  };
 
-  // Bones: rigid rest world transforms in game space (same space as the vertices), then parent-relative locals.
-  const turnQ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI / 2);
-  const boneWorld = skel.bones.map((b) => {
+  // ── scale to a 1.88 m wrestler standing on y = 0 ──
+  const rawPos = read(header.body.positions) as Float32Array;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  for (let i = 1; i < rawPos.length; i += 3) {
+    minY = Math.min(minY, rawPos[i]);
+    maxY = Math.max(maxY, rawPos[i]);
+  }
+  const scale = BASE_HEIGHT / (maxY - minY);
+  const fit = (x: number, y: number, z: number, out: number[] | Float32Array, at: number) => {
+    out[at] = x * scale;
+    out[at + 1] = (y - minY) * scale;
+    out[at + 2] = z * scale;
+  };
+  const pos: number[] = new Array(rawPos.length);
+  for (let i = 0; i < rawPos.length; i += 3) fit(rawPos[i], rawPos[i + 1], rawPos[i + 2], pos, i);
+
+  // ── skeleton: world rest matrices → parent-relative locals ──
+  const bonesIn = header.bones as { name: string; parent: string | null; matrix: number[] }[];
+  const boneIndex: Record<string, number> = {};
+  bonesIn.forEach((b, i) => (boneIndex[b.name] = i));
+  const world = bonesIn.map((b) => {
+    const m = new THREE.Matrix4().fromArray(b.matrix);
     const p = new THREE.Vector3();
     const q = new THREE.Quaternion();
-    b.matrixWorld.decompose(p, q, new THREE.Vector3());
-    return new THREE.Matrix4().compose(p.applyMatrix4(toGame), turnQ.clone().multiply(q), new THREE.Vector3(1, 1, 1));
+    m.decompose(p, q, new THREE.Vector3());
+    p.set(p.x * scale, (p.y - minY) * scale, p.z * scale);
+    return new THREE.Matrix4().compose(p, q, new THREE.Vector3(1, 1, 1));
   });
-  const boneIndex: Record<string, number> = {};
-  skel.bones.forEach((b, i) => (boneIndex[b.name.replace(/\./g, "")] = i));
-  const bones: BoneRest[] = skel.bones.map((b, i) => {
-    const parent = skel.bones.indexOf(b.parent as THREE.Bone);
-    const local = parent >= 0 ? new THREE.Matrix4().copy(boneWorld[parent]).invert().multiply(boneWorld[i]) : boneWorld[i].clone();
+  const bones: BoneRest[] = bonesIn.map((b, i) => {
+    const parent = b.parent ? boneIndex[b.parent] : -1;
+    const local = parent >= 0 ? new THREE.Matrix4().copy(world[parent]).invert().multiply(world[i]) : world[i].clone();
     const p = new THREE.Vector3();
     const q = new THREE.Quaternion();
     local.decompose(p, q, new THREE.Vector3());
-    return { name: b.name.replace(/\./g, ""), parent, position: p, quaternion: q };
+    return { name: b.name, parent, position: p, quaternion: q };
   });
 
-  // Vertex data into game space.
-  const n = pos.count;
-  const P = new Float32Array(n * 3);
-  const v = new THREE.Vector3();
-  for (let i = 0; i < n; i++) {
-    v.copy(world[i]).applyMatrix4(toGame);
-    P.set([v.x, v.y, v.z], i * 3);
+  // ── body topology ──
+  const tris = Array.from(read(header.body.tris) as Uint16Array);
+  const uvq = read(header.body.uvs) as Uint16Array;
+  const cornerUV = Array.from(uvq, (v) => v / 65535);
+  const si = read(header.body.skinIndex) as Uint8Array;
+  const sw = read(header.body.skinWeight) as Uint8Array;
+  const weights: Map<number, number>[] = [];
+  for (let v = 0; v < pos.length / 3; v++) {
+    const w = new Map<number, number>();
+    for (let k = 0; k < 4; k++) if (sw[v * 4 + k] > 0) w.set(si[v * 4 + k], (w.get(si[v * 4 + k]) ?? 0) + sw[v * 4 + k] / 255);
+    weights.push(w);
   }
-  const uvAttr = geo.getAttribute("uv") as THREE.BufferAttribute | undefined;
-  const UV = new Float32Array(n * 2);
-  if (uvAttr) for (let i = 0; i < n; i++) UV.set([uvAttr.getX(i), uvAttr.getY(i)], i * 2);
-  const si = geo.getAttribute("skinIndex") as THREE.BufferAttribute;
-  const sw = geo.getAttribute("skinWeight") as THREE.BufferAttribute;
-  const SI = new Uint16Array(n * 4);
-  const SW = new Float32Array(n * 4);
-  for (let i = 0; i < n; i++) for (let k = 0; k < 4; k++) {
-    SI[i * 4 + k] = si.getComponent(i, k);
-    SW[i * 4 + k] = sw.getComponent(i, k);
-  }
-  const idx = geo.index ? Array.from(geo.index.array) : Array.from({ length: n }, (_, i) => i);
+  const body = finalize({ pos, weights, tris, cornerUV });
+  const topoFirst = new Uint32Array(body.topoCount);
+  for (let i = body.topo.length - 1; i >= 0; i--) topoFirst[body.topo[i]] = i;
 
-  let mesh0: TopoMesh = weld(P, UV, SI, SW, idx);
-  for (let level = 0; level < 2; level++) mesh0 = loopSubdivide(mesh0);
-  return { ...finalize(mesh0), bones, boneIndex };
+  // ── morphs ──
+  const ntopo = pos.length / 3;
+  const nbrs: number[][] = Array.from({ length: ntopo }, () => []);
+  for (let f = 0; f < tris.length; f += 3)
+    for (let c = 0; c < 3; c++) {
+      const x = tris[f + c];
+      const y = tris[f + ((c + 1) % 3)];
+      nbrs[x].push(y);
+      nbrs[y].push(x);
+    }
+  const morphs: Record<string, Morph> = {};
+  for (const m of header.morphs as { name: string; indices: Accessor; deltas: Accessor; quant: number }[]) {
+    const q = read(m.deltas) as Int16Array;
+    const indices = read(m.indices) as Uint16Array;
+    const d = new Float32Array(q.length);
+    for (let i = 0; i < q.length; i++) d[i] = q[i] * m.quant * scale;
+    despike(indices, d, nbrs, ntopo);
+    morphs[m.name] = { name: m.name, indices, deltas: d };
+  }
+
+  // ── parts ──
+  const parts: Record<string, Part> = {};
+  for (const p of header.parts as { name: string; kind: string; positions: Accessor; tris: Accessor; uvs: Accessor; bind: Accessor }[]) {
+    const raw = read(p.positions) as Float32Array;
+    const ppos: number[] = new Array(raw.length);
+    for (let i = 0; i < raw.length; i += 3) fit(raw[i], raw[i + 1], raw[i + 2], ppos, i);
+    const bind = read(p.bind) as Uint16Array;
+    const pTris = Array.from(read(p.tris) as Uint32Array);
+    const pUV = Array.from(read(p.uvs) as Uint16Array, (v) => v / 65535);
+    const pw: Map<number, number>[] = Array.from(bind, (b) => weights[b]);
+    const f = finalize({ pos: ppos, weights: pw, tris: pTris, cornerUV: pUV });
+    parts[p.name] = { name: p.name, kind: p.kind, positions: f.positions, uvs: f.uvs, index: f.index, topo: f.topo, topoCount: f.topoCount, bind: Uint32Array.from(f.topo, (t) => bind[t]) };
+  }
+
+  return { ...body, topoFirst, bones, boneIndex, morphs, parts, textures: header.textures };
+}
+
+/**
+ * Some MakeHuman targets move a lone vertex much further than its neighbours
+ * (a spike on the crown, a point inside the mouth). Replace such outliers with
+ * the average of their neighbours so only the intended shape remains.
+ */
+function despike(indices: Uint16Array, d: Float32Array, nbrs: number[][], ntopo: number) {
+  const slot = new Int32Array(ntopo).fill(-1);
+  indices.forEach((t, k) => (slot[t] = k));
+  for (let k = 0; k < indices.length; k++) {
+    const ns = nbrs[indices[k]];
+    if (!ns.length) continue;
+    let ax = 0;
+    let ay = 0;
+    let az = 0;
+    for (const nb of ns) {
+      const j = slot[nb];
+      if (j < 0) continue;
+      ax += d[j * 3];
+      ay += d[j * 3 + 1];
+      az += d[j * 3 + 2];
+    }
+    ax /= ns.length;
+    ay /= ns.length;
+    az /= ns.length;
+    const dev = Math.hypot(d[k * 3] - ax, d[k * 3 + 1] - ay, d[k * 3 + 2] - az);
+    if (dev > Math.max(0.006, 2.5 * Math.hypot(ax, ay, az))) {
+      d[k * 3] = ax;
+      d[k * 3 + 1] = ay;
+      d[k * 3 + 2] = az;
+    }
+  }
 }
 
 /** Welded mesh: per-topology-vertex positions/weights, per-corner UVs. */
 interface TopoMesh {
   pos: number[];
   weights: Map<number, number>[];
-  tris: number[]; // topo ids, 3 per face
-  cornerUV: number[]; // 6 per face
+  tris: number[];
+  cornerUV: number[];
 }
 
-function weld(P: Float32Array, UV: Float32Array, SI: Uint16Array, SW: Float32Array, idx: number[]): TopoMesh {
-  const key = (i: number) => `${Math.round(P[i * 3] * 1e5)},${Math.round(P[i * 3 + 1] * 1e5)},${Math.round(P[i * 3 + 2] * 1e5)}`;
-  const map = new Map<string, number>();
-  const remap: number[] = [];
-  const pos: number[] = [];
-  const weights: Map<number, number>[] = [];
-  for (let i = 0; i < P.length / 3; i++) {
-    const k = key(i);
-    let t = map.get(k);
-    if (t === undefined) {
-      t = pos.length / 3;
-      map.set(k, t);
-      pos.push(P[i * 3], P[i * 3 + 1], P[i * 3 + 2]);
-      const w = new Map<number, number>();
-      for (let c = 0; c < 4; c++) if (SW[i * 4 + c] > 0) w.set(SI[i * 4 + c], (w.get(SI[i * 4 + c]) ?? 0) + SW[i * 4 + c]);
-      weights.push(w);
-    }
-    remap.push(t);
-  }
-  const tris: number[] = [];
-  const cornerUV: number[] = [];
-  for (let f = 0; f < idx.length; f += 3) {
-    for (let c = 0; c < 3; c++) {
-      tris.push(remap[idx[f + c]]);
-      cornerUV.push(UV[idx[f + c] * 2], UV[idx[f + c] * 2 + 1]);
-    }
-  }
-  return { pos, weights, tris, cornerUV };
-}
-
-function mixWeights(a: Map<number, number>, b: Map<number, number>, ka: number, kb: number) {
-  const out = new Map<number, number>();
-  for (const [j, w] of a) out.set(j, (out.get(j) ?? 0) + w * ka);
-  for (const [j, w] of b) out.set(j, (out.get(j) ?? 0) + w * kb);
-  return out;
-}
-
-function loopSubdivide(m: TopoMesh): TopoMesh {
-  const nv = m.pos.length / 3;
-  const ekey = (a: number, b: number) => (a < b ? a * 1_000_003 + b : b * 1_000_003 + a);
-  const edges = new Map<number, { a: number; b: number; opp: number[]; id: number }>();
-  const nbrs: Set<number>[] = Array.from({ length: nv }, () => new Set());
-  for (let f = 0; f < m.tris.length; f += 3) {
-    for (let c = 0; c < 3; c++) {
-      const a = m.tris[f + c];
-      const b = m.tris[f + ((c + 1) % 3)];
-      const o = m.tris[f + ((c + 2) % 3)];
-      const k = ekey(a, b);
-      let e = edges.get(k);
-      if (!e) {
-        e = { a, b, opp: [], id: -1 };
-        edges.set(k, e);
-      }
-      e.opp.push(o);
-      nbrs[a].add(b);
-      nbrs[b].add(a);
-    }
-  }
-  const boundaryNbrs: number[][] = Array.from({ length: nv }, () => []);
-  for (const e of edges.values()) if (e.opp.length === 1) {
-    boundaryNbrs[e.a].push(e.b);
-    boundaryNbrs[e.b].push(e.a);
-  }
-  const pos: number[] = [];
-  const weights: Map<number, number>[] = [];
-  const P = (i: number, c: number) => m.pos[i * 3 + c];
-  // updated old vertices
-  for (let i = 0; i < nv; i++) {
-    const out = [0, 0, 0];
-    if (boundaryNbrs[i].length >= 2) {
-      const [x, y] = boundaryNbrs[i];
-      for (let c = 0; c < 3; c++) out[c] = 0.75 * P(i, c) + 0.125 * (P(x, c) + P(y, c));
-    } else {
-      const ns = [...nbrs[i]];
-      const k = ns.length;
-      const beta = k === 3 ? 3 / 16 : 3 / (8 * k);
-      for (let c = 0; c < 3; c++) out[c] = (1 - k * beta) * P(i, c) + beta * ns.reduce((s, j) => s + P(j, c), 0);
-    }
-    pos.push(...out);
-    weights.push(m.weights[i]);
-  }
-  // edge vertices
-  for (const e of edges.values()) {
-    e.id = pos.length / 3;
-    for (let c = 0; c < 3; c++) {
-      if (e.opp.length === 2) pos.push(0.375 * (P(e.a, c) + P(e.b, c)) + 0.125 * (P(e.opp[0], c) + P(e.opp[1], c)));
-      else pos.push(0.5 * (P(e.a, c) + P(e.b, c)));
-    }
-    weights.push(mixWeights(m.weights[e.a], m.weights[e.b], 0.5, 0.5));
-  }
-  const tris: number[] = [];
-  const cornerUV: number[] = [];
-  for (let f = 0; f < m.tris.length; f += 3) {
-    const [a, b, c] = [m.tris[f], m.tris[f + 1], m.tris[f + 2]];
-    const uv = (k: number) => [m.cornerUV[(f + k) * 2], m.cornerUV[(f + k) * 2 + 1]];
-    const mid = (k1: number, k2: number) => {
-      const [u1, v1] = uv(k1);
-      const [u2, v2] = uv(k2);
-      return [(u1 + u2) / 2, (v1 + v2) / 2];
-    };
-    const ab = edges.get(ekey(a, b))!.id;
-    const bc = edges.get(ekey(b, c))!.id;
-    const ca = edges.get(ekey(c, a))!.id;
-    const [uA, uB, uC, uAB, uBC, uCA] = [uv(0), uv(1), uv(2), mid(0, 1), mid(1, 2), mid(2, 0)];
-    tris.push(a, ab, ca, ab, b, bc, ca, bc, c, ab, bc, ca);
-    cornerUV.push(...uA, ...uAB, ...uCA, ...uAB, ...uB, ...uBC, ...uCA, ...uBC, ...uC, ...uAB, ...uBC, ...uCA);
-  }
-  return { pos, weights, tris, cornerUV };
-}
-
+/** Split welded topology into render vertices (one per distinct UV) with smooth topology normals. */
 function finalize(m: TopoMesh) {
   const ntopo = m.pos.length / 3;
-  // smooth normals on the welded topology
   const tn = new Float32Array(ntopo * 3);
   const a = new THREE.Vector3();
   const b = new THREE.Vector3();
@@ -257,7 +261,7 @@ function finalize(m: TopoMesh) {
     const t = m.tris[f];
     const u = m.cornerUV[f * 2];
     const v = m.cornerUV[f * 2 + 1];
-    const k = `${t}|${Math.round(u * 1e5)}|${Math.round(v * 1e5)}`;
+    const k = `${t}|${Math.round(u * 1e4)}|${Math.round(v * 1e4)}`;
     let id = map.get(k);
     if (id === undefined) {
       id = positions.length / 3;

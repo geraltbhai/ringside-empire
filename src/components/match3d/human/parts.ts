@@ -1,10 +1,11 @@
 /**
- * Secondary parts built on top of a sculpted body: hair and beard shells (skinned
- * to the same skeleton), hanging hair, eyes with lids. All hair is shaded with a
- * strand-noise material so it reads as hair rather than a plastic cap.
+ * Secondary parts built on top of a sculpted body: MakeHuman parts (eyes,
+ * brows, lashes, hair cards) and procedural hair and beard shells, all skinned
+ * to the same skeleton.
  */
 import * as THREE from "three";
 import type { Appearance } from "@/engine/types";
+import type { HumanBase, Part } from "./base";
 import type { Landmarks } from "./sculpt";
 
 const smooth = (e0: number, e1: number, x: number) => {
@@ -134,56 +135,75 @@ diffuseColor.rgb *= 0.62 + 0.55 * strand(vRest) * (0.8 + 0.2 * sin(vRest.y * 300
   return mat;
 }
 
-/** A hanging hair sheet behind the head and down to the shoulders (long hair). */
-export function longHairGeometry(lm: Landmarks, length: number) {
-  const g = new THREE.CylinderGeometry(0.095, 0.13, length, 28, 12, true, Math.PI * 0.62, Math.PI * 1.76);
-  const pos = g.getAttribute("position") as THREE.BufferAttribute;
-  for (let i = 0; i < pos.count; i++) {
-    const y = pos.getY(i);
-    const k = (length / 2 - y) / length; // 0 top .. 1 bottom
-    // flatten against the back, wave the ends
-    pos.setZ(i, pos.getZ(i) * (0.75 - k * 0.15) - k * 0.03);
-    pos.setX(i, pos.getX(i) * (1 + Math.sin(i * 1.7) * 0.03 * k));
+/**
+ * A fitted MakeHuman part (eyes, brows, lashes, hair). Every vertex rides on its
+ * nearest body vertex: it moves with the morphs and sculpt and copies that
+ * vertex's skin weights, so it stays glued on through any pose.
+ */
+export function buildPartGeometry(part: Part, base: HumanBase, topoDisp: Float32Array) {
+  const n = part.positions.length / 3;
+  const pos = new Float32Array(n * 3);
+  const si = new Uint16Array(n * 4);
+  const sw = new Float32Array(n * 4);
+  for (let i = 0; i < n; i++) {
+    const t = part.bind[i];
+    pos[i * 3] = part.positions[i * 3] + topoDisp[t * 3];
+    pos[i * 3 + 1] = part.positions[i * 3 + 1] + topoDisp[t * 3 + 1];
+    pos[i * 3 + 2] = part.positions[i * 3 + 2] + topoDisp[t * 3 + 2];
+    const v = base.topoFirst[t];
+    for (let k = 0; k < 4; k++) {
+      si[i * 4 + k] = base.skinIndex[v * 4 + k];
+      sw[i * 4 + k] = base.skinWeight[v * 4 + k];
+    }
   }
-  g.translate(0, lm.eyeY + 0.02 - length / 2, -0.03);
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  g.setAttribute("aRest", new THREE.BufferAttribute(part.positions, 3));
+  g.setAttribute("uv", new THREE.BufferAttribute(part.uvs, 2));
+  g.setAttribute("skinIndex", new THREE.BufferAttribute(si, 4));
+  g.setAttribute("skinWeight", new THREE.BufferAttribute(sw, 4));
+  g.setIndex(new THREE.BufferAttribute(part.index, 1));
   g.computeVertexNormals();
-  const rest = new Float32Array(pos.array as Float32Array);
-  g.setAttribute("aRest", new THREE.BufferAttribute(rest, 3));
+  g.computeBoundingSphere();
   return g;
 }
 
-export function ponytailGeometry(lm: Landmarks) {
-  const g = new THREE.CapsuleGeometry(0.026, 0.22, 4, 12);
-  g.rotateX(0.35);
-  g.translate(0, lm.eyeY - 0.08, -0.13);
-  g.setAttribute("aRest", new THREE.BufferAttribute(new Float32Array((g.getAttribute("position") as THREE.BufferAttribute).array as Float32Array), 3));
-  return g;
-}
-
-/** Eyeball with a painted iris and pupil, looking down +Z. */
-export function createEyeMaterial(iris: string) {
-  const mat = new THREE.MeshPhysicalMaterial({ color: "#ffffff", roughness: 0.08, clearcoat: 1, clearcoatRoughness: 0.02 });
-  const irisC = new THREE.Color(iris);
+/**
+ * Alpha-card material for brows, lashes and hair: the texture's shape and
+ * shading, recoloured to the wrestler's hair colour.
+ */
+export function createCardMaterial(map: THREE.Texture, color: string, mean: THREE.Vector3, opts: { roughness?: number; sheen?: number } = {}) {
+  const tint = new THREE.Color(color);
+  const mat = new THREE.MeshPhysicalMaterial({
+    map,
+    color: "#ffffff",
+    roughness: opts.roughness ?? 0.6,
+    sheen: opts.sheen ?? 0.5,
+    sheenRoughness: 0.35,
+    // sheen follows the hair colour so dark hair stays dark instead of turning grey
+    sheenColor: tint.clone().multiplyScalar(1.6).lerp(new THREE.Color("#ffffff"), 0.08),
+    alphaTest: 0.35,
+    alphaToCoverage: true,
+    side: THREE.DoubleSide,
+  });
+  const lum = mean.x * 0.2126 + mean.y * 0.7152 + mean.z * 0.0722;
   mat.onBeforeCompile = (shader) => {
-    shader.uniforms.uIris = { value: irisC };
-    shader.vertexShader = shader.vertexShader
-      .replace("#include <common>", "#include <common>\nvarying vec3 vLocal;")
-      .replace("#include <begin_vertex>", "#include <begin_vertex>\nvLocal = position;");
+    shader.uniforms.uTint = { value: new THREE.Vector3(tint.r, tint.g, tint.b) };
+    shader.uniforms.uLum = { value: Math.max(0.02, lum) };
     shader.fragmentShader = shader.fragmentShader
-      .replace("#include <common>", "#include <common>\nvarying vec3 vLocal; uniform vec3 uIris;")
+      .replace("#include <common>", "#include <common>\nuniform vec3 uTint; uniform float uLum;")
       .replace(
-        "#include <color_fragment>",
-        `#include <color_fragment>
-vec3 d = normalize(vLocal);
-float ang = acos(clamp(d.z, -1.0, 1.0));
-vec3 c = vec3(0.93, 0.9, 0.86) - vec3(0.0, 0.05, 0.05) * smoothstep(0.6, 1.4, ang);
-float ring = smoothstep(0.52, 0.48, ang);
-c = mix(c, uIris * (0.7 + 0.3 * sin(atan(d.y, d.x) * 30.0)), ring);
-c = mix(c, uIris * 0.4, smoothstep(0.42, 0.5, ang) * ring);
-c = mix(c, vec3(0.01), smoothstep(0.22, 0.18, ang));
-diffuseColor.rgb = c;`,
+        "#include <map_fragment>",
+        `#include <map_fragment>
+float l = dot(diffuseColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+diffuseColor.rgb = uTint * clamp(l / uLum, 0.0, 2.5);`,
       );
   };
-  mat.customProgramCacheKey = () => "wrestler-eye-v1";
+  mat.customProgramCacheKey = () => "wrestler-card-v1";
   return mat;
+}
+
+/** Glossy eyeball with the iris texture, tinted per wrestler. */
+export function createEyeMaterial(map: THREE.Texture, tint: string) {
+  return new THREE.MeshPhysicalMaterial({ map, color: tint, roughness: 0.12, clearcoat: 1, clearcoatRoughness: 0.03 });
 }

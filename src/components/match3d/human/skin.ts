@@ -72,7 +72,12 @@ export function hexToVec3(hex: string) {
   return new THREE.Vector3(c.r, c.g, c.b);
 }
 
-export function createSkinMaterial(a: Appearance, lm: Landmarks, seed: number) {
+/**
+ * `skinMap` is a MakeHuman skin texture (pores, lips, nipples, knuckles); it is
+ * used as detail and tinted to the wrestler's tone. `skinMean` is its average
+ * linear colour, so the tint keeps the wrestler's exact skin tone.
+ */
+export function createSkinMaterial(a: Appearance, lm: Landmarks, seed: number, skinMap: THREE.Texture | null, skinMean: THREE.Vector3, headMean: THREE.Vector3 = skinMean) {
   const bits = (a.tattoos ?? []).reduce((s, t) => s | TATTOO_BITS[t], 0);
   const uniforms: SkinUniforms = {
     uSkin: { value: hexToVec3(a.skinTone) },
@@ -89,6 +94,10 @@ export function createSkinMaterial(a: Appearance, lm: Landmarks, seed: number) {
     uL1: { value: new THREE.Vector4(lm.headTop, lm.eyeY, lm.mouthY, lm.chinY) },
     uL2: { value: new THREE.Vector4(lm.pelvisY, lm.navelY, lm.kneeY, lm.ankleY) },
     uL3: { value: new THREE.Vector4(lm.eyeX, lm.eyeZ, lm.chestY, lm.neckY) },
+    uSkinMap: { value: skinMap },
+    uSkinMean: { value: skinMean },
+    uHeadMean: { value: headMean },
+    uHasMap: { value: skinMap ? 1 : 0 },
   };
   const mat = new THREE.MeshPhysicalMaterial({
     color: "#ffffff",
@@ -106,18 +115,19 @@ export function createSkinMaterial(a: Appearance, lm: Landmarks, seed: number) {
         "#include <common>",
         `#include <common>
 attribute vec3 aRest; attribute vec4 aRegA; attribute vec4 aRegB; attribute vec4 aLimb;
-varying vec3 vRest; varying vec4 vRegA; varying vec4 vRegB; varying vec4 vLimb;`,
+varying vec3 vRest; varying vec4 vRegA; varying vec4 vRegB; varying vec4 vLimb; varying vec2 vSkinUv;`,
       )
       .replace(
         "#include <begin_vertex>",
         `#include <begin_vertex>
-vRest = aRest; vRegA = aRegA; vRegB = aRegB; vLimb = aLimb;`,
+vRest = aRest; vRegA = aRegA; vRegB = aRegB; vLimb = aLimb; vSkinUv = uv;`,
       );
     shader.fragmentShader = shader.fragmentShader
       .replace(
         "#include <common>",
         `#include <common>
-varying vec3 vRest; varying vec4 vRegA; varying vec4 vRegB; varying vec4 vLimb;
+varying vec3 vRest; varying vec4 vRegA; varying vec4 vRegB; varying vec4 vLimb; varying vec2 vSkinUv;
+uniform sampler2D uSkinMap; uniform vec3 uSkinMean; uniform vec3 uHeadMean; uniform float uHasMap;
 uniform vec3 uSkin, uHair, uPrim, uSec, uBoot;
 uniform vec4 uStyle, uFlags, uL1, uL2, uL3;
 uniform float uMask, uSeed, uSweat;
@@ -164,18 +174,15 @@ float tribalInk(float u, float v){
   float eyeX = uL3.x, eyeZ = uL3.y, chestY = uL3.z, neckY = uL3.w;
   int outfit = int(uStyle.x + 0.5); int facial = int(uStyle.y + 0.5); int hairStyle = int(uStyle.z + 0.5); int paint = int(uStyle.w + 0.5);
 
-  // ── skin ──
-  float mott = fbm(r * 55.0 + uSeed);
-  vec3 col = uSkin * (0.9 + 0.16 * mott);
-  col *= 1.0 - 0.05 * vnoise(r * 900.0);                     // pores
-  col = mix(col, col * vec3(1.08, 0.86, 0.82), 0.25 * smoothstep(0.55, 0.75, fbm(r * 18.0 + 3.0)) * (armW + legW)); // flush
-  // nipples, navel
-  if (torsoW > 0.5 && r.z > 0.0) {
-    float nip = 1.0 - smoothstep(0.006, 0.011, length(vec2(abs(r.x) - 0.095, r.y - (chestY - 0.035))));
-    col = mix(col, col * vec3(0.72, 0.55, 0.5), nip * 0.8);
-    float nav = 1.0 - smoothstep(0.003, 0.007, length(vec2(r.x, r.y - navelY)));
-    col = mix(col, col * 0.55, nav);
+  // ── skin: photographic detail from the skin map, tinted to this wrestler's tone ──
+  vec3 col = uSkin;
+  if (uHasMap > 0.5) {
+    vec3 tex = texture2D(uSkinMap, vSkinUv).rgb;
+    // the head has its own UV island (u > 0.62) with a different base brightness
+    vec3 mean = vSkinUv.x > 0.62 && vSkinUv.y > 0.15 ? uHeadMean : uSkinMean;
+    col = uSkin * clamp(tex / mean, 0.0, 2.2);
   }
+  col *= 0.96 + 0.08 * fbm(r * 55.0 + uSeed);
   vec3 hairCol = uHair;
   float hairTone = 0.8 + 0.25 * vnoise(r * vec3(500.0, 60.0, 500.0));
 
@@ -183,34 +190,31 @@ float tribalInk(float u, float v){
   float front = smoothstep(-0.02, 0.04, r.z);
   if (headW > 0.4) {
     float faceY = r.y;
-    // eyebrows (arched)
     float ax = abs(r.x);
-    float browY = eyeY + 0.018 - pow(ax - 0.034, 2.0) * 9.0;
-    float brow = (1.0 - smoothstep(0.003, 0.0065, abs(faceY - browY))) * step(0.012, ax) * (1.0 - smoothstep(0.052, 0.06, ax)) * front;
-    col = mix(col, hairCol * 0.55, brow * 0.9);
-    // eyelid crease and under-eye shadow
-    float lid = (1.0 - smoothstep(0.0, 0.016, length(vec2(ax - eyeX, (faceY - eyeY) * 1.6)))) * front;
-    col *= 1.0 - 0.18 * lid;
-    // lips
-    float lip = (1.0 - smoothstep(0.004, 0.007, abs(faceY - mouthY))) * (1.0 - smoothstep(0.018, 0.024, ax)) * front;
-    col = mix(col, col * vec3(0.78, 0.55, 0.52), lip * 0.75);
+    // lips and mouth come from the skin map; these masks keep beards and paint off them
+    float lip = (1.0 - smoothstep(0.006, 0.01, abs(faceY - mouthY))) * (1.0 - smoothstep(0.022, 0.028, ax)) * front;
     float mouthLine = (1.0 - smoothstep(0.0005, 0.0015, abs(faceY - mouthY))) * (1.0 - smoothstep(0.016, 0.022, ax)) * front;
-    col *= 1.0 - 0.45 * mouthLine;
     // facial hair
-    float lower = 1.0 - smoothstep(eyeY - 0.04, eyeY - 0.02, faceY);
-    float jawline = smoothstep(chinY - 0.03, chinY - 0.005, faceY) * smoothstep(-0.03, 0.0, r.z);
-    float beardZone = lower * jawline * (1.0 - smoothstep(0.065, 0.075, ax + max(0.0, -r.z) * 2.0));
-    float mustache = (1.0 - smoothstep(0.004, 0.008, abs(faceY - (mouthY + 0.012)))) * (1.0 - smoothstep(0.024, 0.03, ax)) * front;
-    float chinPatch = (1.0 - smoothstep(0.01, 0.025, length(vec2(r.x, (faceY - (chinY + 0.012)) * 0.8)))) * front;
-    float strands = 0.6 + 0.4 * vnoise(r * vec3(700.0, 300.0, 700.0));
-    float lipClear = 1.0 - lip;
-    if (facial == 1) col = mix(col, mix(col, hairCol, 0.5), beardZone * lipClear * 0.65 * strands);
-    if (facial == 2) col = mix(col, hairCol * hairTone, max(mustache, chinPatch) * lipClear * strands);
-    if (facial == 3) col = mix(col, hairCol * hairTone, max(beardZone, mustache) * lipClear * (0.75 + 0.25 * strands));
+    // beard line: under the nose at the centre, rising to the cheekbones at the sides, down under the jaw
+    float top = mix(mouthY + 0.014, eyeY - 0.035, smoothstep(0.016, 0.045, ax));
+    float lower = 1.0 - smoothstep(top - 0.004, top + 0.004, faceY);
+    float jawline = smoothstep(chinY - 0.028 - max(0.0, r.z) * 0.1, chinY - 0.006, faceY) * smoothstep(-0.035, -0.005, r.z);
+    float beardZone = lower * jawline * (1.0 - smoothstep(0.066, 0.076, ax + max(0.0, -r.z) * 2.0));
+    float mustache = (1.0 - smoothstep(0.005, 0.009, abs(faceY - (mouthY + 0.011)))) * (1.0 - smoothstep(0.026, 0.032, ax)) * front;
+    float chinPatch = (1.0 - smoothstep(0.012, 0.024, length(vec2(r.x, (faceY - (chinY + 0.014)) * 0.8)))) * front;
+    // individual whiskers: fine streaks running down the face, darker at the roots
+    float strands = smoothstep(0.35, 0.75, vnoise(r * vec3(900.0, 160.0, 900.0)));
+    float roots = 0.75 + 0.25 * vnoise(r * 1400.0);
+    float lipClear = 1.0 - lip * 0.85;
+    vec3 whisker = hairCol * (0.7 + 0.3 * strands) * roots;
+    if (facial == 1) col = mix(col, mix(col, hairCol * 0.7, 0.55), beardZone * lipClear * (0.45 + 0.35 * strands));
+    if (facial == 2) col = mix(col, whisker, max(mustache, chinPatch) * lipClear * (0.85 + 0.15 * strands));
+    if (facial == 3) col = mix(col, whisker, max(beardZone, mustache) * lipClear * (0.94 + 0.06 * strands));
     // scalp: buzz cut shading or hair roots under the hair shell
-    float hairline = eyeY + mix(0.055, -0.05, smoothstep(-0.02, -0.07, r.z)) + (r.z > 0.0 ? 0.0 : 0.0);
+    float hairline = eyeY + mix(0.068, -0.06, smoothstep(0.0, -0.08, r.z)) - smoothstep(0.045, 0.07, abs(r.x)) * smoothstep(0.06, 0.0, r.z) * 0.02;
     float scalp = smoothstep(hairline - 0.004, hairline + 0.006, faceY) * step(0.5, headW);
-    if (hairStyle == 1) col = mix(col, hairCol * 0.9, scalp * 0.75 * (0.7 + 0.3 * vnoise(r * 800.0)));
+    // buzz cut: dense dark stubble on the scalp
+    if (hairStyle == 1) col = mix(col, hairCol * (0.6 + 0.4 * vnoise(r * 1200.0)), scalp * 0.85);
     if (hairStyle >= 2) col = mix(col, hairCol * 0.6, scalp * 0.9);
     // face paint
     if (paint == 1) { // warrior: two-tone stripes across the face

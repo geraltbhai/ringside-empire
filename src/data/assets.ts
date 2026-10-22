@@ -15,7 +15,7 @@ export const PORTRAIT_MANIFEST: Record<string, string> = {};
 
 export const ASSET_CREDITS = [
   { asset: "Wrestler portraits", source: "Rendered from each 3D model at runtime; procedural SVG fallback (original)", license: "Project license" },
-  { asset: "Human base mesh (rigged, with finger bones)", source: "Godot Male Base Mesh, github.com/BoQsc/Godot-Male-Base-Mesh (public/models/base-male.glb)", license: "CC0 1.0" },
+  { asset: "Human body, anatomical targets, skins, eyes, brows, lashes, hair (public/models/human*)", source: "MakeHuman system assets, baked with Blender + MPFB2 by scripts/blender/bake_human.py", license: "CC0 1.0" },
   { asset: "Wrestler sculpting, skin, gear and tattoo shading", source: "Generated at runtime from the base mesh (original)", license: "Project license" },
   { asset: "Ragdoll physics", source: "Rapier (@dimforge/rapier3d-compat)", license: "Apache-2.0" },
   { asset: "Simplex noise (shader)", source: "Ashima Arts / Stefan Gustavson", license: "MIT" },

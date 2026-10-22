@@ -6,7 +6,7 @@
  */
 import * as THREE from "three";
 import type { Wrestler } from "@/engine/types";
-import { loadHumanBase } from "./human/base";
+import { loadHumanAssets } from "./human/assets";
 import { NEUTRAL } from "./poses";
 import { build } from "./WrestlerModel";
 
@@ -65,8 +65,8 @@ function backdrop([dark, light]: [string, string]) {
 async function renderOne(w: Wrestler): Promise<string | null> {
   const r = getRenderer();
   if (!r) return null;
-  const base = await loadHumanBase();
-  const model = build(base, w, false);
+  const assets = await loadHumanAssets();
+  const model = build(assets, w, false);
   const scene = new THREE.Scene();
   const bg = backdrop(BRAND_BG[w.brand]);
   scene.background = bg;
