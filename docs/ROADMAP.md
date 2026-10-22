@@ -6,15 +6,15 @@ deep promotion management (ratings, match quality, booking, contracts, injuries)
 
 Wrestling Empire is a reference for **feel and style only**. No assets, code or data are copied from it.
 
-## Phase 1 — Wrestler models (in progress)
-- MakeHuman CC0 body built headlessly in Blender (MPFB2), exported as one `.glb` with shape keys
-  (muscle, weight, proportions, face: jaw, chin, cheeks, nose, brow, eyes, ears, head shape) and a game
-  skeleton with fingers. Blender and the asset pack are removed afterwards.
+## Phase 1 — Wrestler models ✅
+- MakeHuman CC0 body baked headlessly in Blender (MPFB2) into `public/models/human.bin`: 13k-vertex body,
+  game skeleton with fingers, 100 sparse anatomical morphs (build, race structure, jaw, chin, cheeks, nose,
+  brow, eyes, ears, head shapes, torso and limbs), eyes/brows/lashes/hair. Blender is removed afterwards.
 - Wrestling Empire-style readability: slightly heroic proportions, strong silhouettes, bold gear colours,
   high-contrast faces (brows, beards, eyes) that read at match-camera distance.
 - Per-wrestler morphs drive build and face; skin texture + existing gear/tattoo shader on top.
 
-## Phase 2 — Engine v2: any number of wrestlers, the whole arena
+## Phase 2 — Engine v2: any number of wrestlers, the whole arena ✅ (first pass)
 - Rewrite `live-match.ts` around N fighters (2–30), each with an AI brain and a current target.
 - Arena geography: inside the ring, on the apron, on the floor, by the barricade, up the ramp.
   Roll out / climb in through the ropes, climb onto the apron and turnbuckles.
@@ -23,6 +23,9 @@ Wrestling Empire is a reference for **feel and style only**. No assets, code or 
   submissions. Stamina, adrenaline (comeback state), selling and "busted open" visuals.
 - Longer, paced matches: a match pacing model (feeling out → heat → comeback → finish) so AI matches
   build like real ones; adjustable lengths up to 60 minutes.
+- Done: N-wrestler engine (singles, Triple Threat, Fatal 4-Way), roll out/in, over-the-top spills,
+  count-outs, body-part damage, fired-up comebacks, pin break-ups, pacing, match lengths to 60 min.
+  Still to come: apron and turnbuckle spots, dives to the floor, selling/blood visuals.
 
 ## Phase 3 — Hardcore and weapons
 - Physics props (Rapier): steel chair, kendo stick, table (breakable), ladder, steel steps, trash can,

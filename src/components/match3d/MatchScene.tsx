@@ -7,7 +7,7 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { type MutableRefObject, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import type { MatchState } from "@/engine/live-match";
+import { type MatchState, playerOf } from "@/engine/live-match";
 import type { Appearance, Wrestler } from "@/engine/types";
 import * as sfx from "@/lib/sfx";
 import { ArenaLights, ArenaShell, RING, Ring } from "./ArenaScene";
@@ -21,12 +21,12 @@ export interface MatchFx {
   phase: "intro" | "live" | "over";
   phaseTime: number;
   /** Hit-flash intensity per fighter, decays in the scene. */
-  flash: [number, number];
+  flash: number[];
   /** Pending body-slam impact on the canvas (0..1); the scene turns it into ring bounce. */
   mat: number;
   /** Direction each fighter was last hit from (unit XZ), and whether it was a big move. */
-  hitDir: [{ x: number; z: number }, { x: number; z: number }];
-  big: [boolean, boolean];
+  hitDir: { x: number; z: number }[];
+  big: boolean[];
 }
 
 /** Vertical give of the ring after a slam: a damped spring the mat and wrestlers ride on. */
@@ -68,11 +68,17 @@ interface Physics {
   ikT: ({ L: THREE.Vector3; R: THREE.Vector3 } | null)[];
 }
 
-function Fighters({ wrestlers, state, fx, bounce }: { wrestlers: [Wrestler, Wrestler]; state: MutableRefObject<MatchState>; fx: MutableRefObject<MatchFx>; bounce: MutableRefObject<Bounce> }) {
-  const drivers = [useRef<RigDriver>({ x: -1.6, z: 0, y: RING.matY, facing: Math.PI / 2, anim: "idle", animTime: 0 }), useRef<RigDriver>({ x: 1.6, z: 0, y: RING.matY, facing: -Math.PI / 2, anim: "idle", animTime: 0 })];
+function Fighters({ wrestlers, state, fx, bounce }: { wrestlers: Wrestler[]; state: MutableRefObject<MatchState>; fx: MutableRefObject<MatchFx>; bounce: MutableRefObject<Bounce> }) {
+  const n = wrestlers.length;
+  const drivers = useMemo(
+    () => state.current.fighters.map((f) => ({ current: { x: f.x, z: f.z, y: f.y, facing: f.facing, anim: "idle", animTime: 0 } as RigDriver })),
+    // one set of drivers per match
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [n],
+  );
   const ref = useRef<RigDriver>({ x: 0, z: -1.8, y: RING.matY, facing: 0, anim: "ref-watch", animTime: 0 });
   const lastRef = useRef({ x: 0, z: -1.8 });
-  const physics = useRef<Physics>({ world: null, dolls: [null, null], prevAnim: ["idle", "idle"], ikW: [0, 0], ikT: [null, null] });
+  const physics = useRef<Physics>({ world: null, dolls: Array(n).fill(null), prevAnim: Array(n).fill("idle"), ikW: Array(n).fill(0), ikT: Array(n).fill(null) });
 
   useEffect(() => {
     let live = true;
@@ -86,7 +92,7 @@ function Fighters({ wrestlers, state, fx, bounce }: { wrestlers: [Wrestler, Wres
     return () => {
       live = false;
       P.dolls.forEach((d) => d?.dispose());
-      P.dolls = [null, null];
+      P.dolls = P.dolls.map(() => null);
       P.world?.dispose();
       P.world = null;
     };
@@ -95,15 +101,16 @@ function Fighters({ wrestlers, state, fx, bounce }: { wrestlers: [Wrestler, Wres
   useFrame((_, dt) => {
     const s = state.current;
     s.fighters.forEach((f, i) => {
-      const other = s.fighters[1 - i];
+      const other = f.partner >= 0 ? s.fighters[f.partner] : null;
       const d = drivers[i].current;
       d.x = f.x;
       d.z = f.z;
-      d.y = RING.matY + bounce.current.y;
+      // the ring bounces under people standing on it
+      d.y = f.y + (f.zone === "ring" && f.state !== "transition" ? bounce.current.y : 0);
       d.facing = f.facing;
       d.sweat = Math.min(1, s.time / 150);
       // A grappled defender is carried through the attacker's lift.
-      if (f.state === "grappled" && other.state === "attack" && other.move && LIFT_MOVES.has(other.move.kind)) {
+      if (f.state === "grappled" && other && other.state === "attack" && other.move && LIFT_MOVES.has(other.move.kind)) {
         d.anim = "lifted";
         d.animTime = other.stateTime;
         d.facing = other.facing + Math.PI;
@@ -146,12 +153,13 @@ function Fighters({ wrestlers, state, fx, bounce }: { wrestlers: [Wrestler, Wres
         return true;
       };
 
-      // hands on the opponent
-      const other = s.fighters[1 - i];
+      // hands on the opponent: the partner in a tie-up, otherwise the current target
+      const oi = f.partner >= 0 ? f.partner : f.target;
+      const other = oi >= 0 ? s.fighters[oi] : null;
       const me = d.out;
-      const them = drivers[1 - i].current.out;
+      const them = oi >= 0 ? drivers[oi].current.out : undefined;
       let want = 0;
-      if (me && them) {
+      if (me && them && other) {
         const left = new THREE.Vector3(Math.cos(f.facing), 0, -Math.sin(f.facing));
         const at = (bone: string) => them.rig.by(bone).getWorldPosition(new THREE.Vector3());
         if (f.state === "lockup" || (f.state === "grappled" && other.state === "lockup")) {
@@ -185,8 +193,11 @@ function Fighters({ wrestlers, state, fx, bounce }: { wrestlers: [Wrestler, Wres
       r.anim = "ref-count";
       r.animTime = s.referee.countTime;
     } else {
-      const mx = (s.fighters[0].x + s.fighters[1].x) / 2;
-      const mz = (s.fighters[0].z + s.fighters[1].z) / 2;
+      const p = playerOf(s);
+      const q = p.target >= 0 ? s.fighters[p.target] : s.fighters.find((x) => x !== p) ?? p;
+      const out = s.referee.outCount > 0 ? s.fighters.find((x) => x.zone === "floor") : null;
+      const mx = out ? out.x : (p.x + q.x) / 2;
+      const mz = out ? out.z : (p.z + q.z) / 2;
       r.facing = Math.atan2(mx - r.x, mz - r.z);
       if (speed > 0.4) {
         r.anim = "walk";
@@ -201,8 +212,9 @@ function Fighters({ wrestlers, state, fx, bounce }: { wrestlers: [Wrestler, Wres
 
   return (
     <>
-      <WrestlerModel wrestler={wrestlers[0]} driver={drivers[0]} />
-      <WrestlerModel wrestler={wrestlers[1]} driver={drivers[1]} />
+      {wrestlers.map((w, i) => (
+        <WrestlerModel key={w.id} wrestler={w} driver={drivers[i]} />
+      ))}
       <WrestlerModel wrestler={REFEREE} driver={ref} castShadow={false} />
     </>
   );
@@ -266,10 +278,14 @@ function CameraRig({ state, fx, reducedMotion }: { state: MutableRefObject<Match
   useFrame((_, dt) => {
     const s = state.current;
     const f = fx.current;
-    const [a, b] = s.fighters;
+    const a = playerOf(s);
+    const b = (a.target >= 0 && s.fighters[a.target]) || s.fighters.find((x) => x !== a) || a;
     const mx = (a.x + b.x) / 2;
     const mz = (a.z + b.z) / 2;
+    const my = (a.y + b.y) / 2;
     const dist = Math.hypot(a.x - b.x, a.z - b.z);
+    // pull back when the fight spills outside
+    const outside = a.zone === "floor" || b.zone === "floor" ? 1.6 : 0;
     let target: THREE.Vector3;
     let lookAt: THREE.Vector3;
     if (f.phase === "intro") {
@@ -281,14 +297,14 @@ function CameraRig({ state, fx, reducedMotion }: { state: MutableRefObject<Match
     } else if (f.phase === "over") {
       const w = s.fighters.find((x) => x.id === s.winner) ?? a;
       const ang = f.phaseTime * 0.25;
-      target = new THREE.Vector3(w.x + Math.sin(ang) * 3.6, 2.9, w.z + Math.cos(ang) * 3.6 + 0.5);
-      lookAt = new THREE.Vector3(w.x, 2.25, w.z);
+      target = new THREE.Vector3(w.x + Math.sin(ang) * 3.6, w.y + 1.7, w.z + Math.cos(ang) * 3.6 + 0.5);
+      lookAt = new THREE.Vector3(w.x, w.y + 1.05, w.z);
     } else {
       // Hard-camera framing: stays on the +z side so the controls never flip.
-      const zoom = 4.6 + dist * 0.9 + (s.pin ? -0.8 : 0);
+      const zoom = 4.6 + dist * 0.9 + (s.pin ? -0.8 : 0) + outside;
       // High enough that the top rope sits below the wrestlers' chests.
-      target = new THREE.Vector3(mx * 0.7, 3.25 + dist * 0.25, mz + zoom);
-      lookAt = new THREE.Vector3(mx * 0.9, 1.95, mz);
+      target = new THREE.Vector3(mx * 0.7, 2.05 + my + dist * 0.25 + outside * 0.4, mz + zoom);
+      lookAt = new THREE.Vector3(mx * 0.9, my + 0.75, mz);
     }
     const k = 1 - Math.exp(-dt * (f.phase === "live" ? 3.5 : 1.8));
     pos.current.lerp(target, k);
@@ -307,7 +323,7 @@ function CameraRig({ state, fx, reducedMotion }: { state: MutableRefObject<Match
 
 function BouncingRing({ state, fx, bounce, theme }: { state: MutableRefObject<MatchState>; fx: MutableRefObject<MatchFx>; bounce: MutableRefObject<Bounce>; theme: Theme }) {
   const group = useRef<THREE.Group>(null);
-  const bodies = () => state.current.fighters;
+  const bodies = () => state.current.fighters.filter((f) => f.zone === "ring" && f.state !== "transition");
   useFrame((_, rawDt) => {
     const dt = Math.min(rawDt, 1 / 30);
     const b = bounce.current;
@@ -326,9 +342,9 @@ function BouncingRing({ state, fx, bounce, theme }: { state: MutableRefObject<Ma
   );
 }
 
-export default function MatchScene({ wrestlers, state, fx, reducedMotion, lowGraphics = false }: { wrestlers: [Wrestler, Wrestler]; state: MutableRefObject<MatchState>; fx: MutableRefObject<MatchFx>; reducedMotion: boolean; lowGraphics?: boolean }) {
+export default function MatchScene({ wrestlers, state, fx, reducedMotion, lowGraphics = false }: { wrestlers: Wrestler[]; state: MutableRefObject<MatchState>; fx: MutableRefObject<MatchFx>; reducedMotion: boolean; lowGraphics?: boolean }) {
   const bounce = useRef<Bounce>({ y: 0, v: 0 });
-  const theme = useMemo(() => themeFor([wrestlers[0].brand, wrestlers[1].brand]), [wrestlers]);
+  const theme = useMemo(() => themeFor(wrestlers.map((w) => w.brand)), [wrestlers]);
   return (
     <>
       <color attach="background" args={["#05060a"]} />

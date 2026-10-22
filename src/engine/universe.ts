@@ -618,7 +618,7 @@ export function disbandTeam(universe: Universe, teamId: string) {
 /** Records a playable exhibition match result (not tied to a show). */
 export function recordExhibition(
   universe: Universe,
-  input: { sideA: string[]; sideB: string[]; winnerIds: string[]; quality: number; titleId: string | null; durationSec: number; finish: string },
+  input: { sideA: string[]; sideB: string[]; sideC?: string[]; winnerIds: string[]; quality: number; titleId: string | null; durationSec: number; finish: string },
 ) {
   const show: Show = {
     id: "exhibition",
@@ -634,16 +634,17 @@ export function recordExhibition(
     status: "completed",
     result: null,
   };
-  const winnerSide: "A" | "B" = input.sideA.every((id) => input.winnerIds.includes(id)) ? "A" : "B";
+  const sideC = input.sideC ?? [];
+  const winnerSide: "A" | "B" | "C" = input.sideA.every((id) => input.winnerIds.includes(id)) ? "A" : sideC.length && sideC.every((id) => input.winnerIds.includes(id)) ? "C" : "B";
   const seg: Segment = {
     id: nextId(universe, "seg"),
     kind: "match",
     label: "Exhibition",
-    matchType: input.sideA.length === 2 ? "tag" : "singles",
+    matchType: sideC.length ? "triple-threat" : input.sideA.length === 2 ? "tag" : "singles",
     stipulation: "standard",
     sideA: input.sideA,
     sideB: input.sideB,
-    sideC: [],
+    sideC,
     titleId: input.titleId,
     rivalryId: null,
     durationMin: Math.max(1, Math.round(input.durationSec / 60)),

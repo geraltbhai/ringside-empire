@@ -1,9 +1,9 @@
 "use client";
 /** 2D top-down fallback renderer for the live match (used when WebGL is unavailable). */
 import { type MutableRefObject, useEffect, useRef } from "react";
-import { RING_LIMIT, type MatchState } from "@/engine/live-match";
+import { FLOOR_LIMIT, type MatchState, RING_LIMIT } from "@/engine/live-match";
 
-export function TopDownView({ state, colors }: { state: MutableRefObject<MatchState>; colors: [string, string] }) {
+export function TopDownView({ state, colors }: { state: MutableRefObject<MatchState>; colors: string[] }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     let raf = 0;
@@ -13,11 +13,15 @@ export function TopDownView({ state, colors }: { state: MutableRefObject<MatchSt
       if (c && ctx) {
         const w = (c.width = c.clientWidth * devicePixelRatio);
         const h = (c.height = c.clientHeight * devicePixelRatio);
-        const scale = Math.min(w, h) / (RING_LIMIT * 2 + 1.6);
+        const scale = Math.min(w, h) / (FLOOR_LIMIT * 2 + 0.6);
         const toX = (x: number) => w / 2 + x * scale;
         const toY = (z: number) => h / 2 + z * scale;
         ctx.fillStyle = "#07080c";
         ctx.fillRect(0, 0, w, h);
+        // ringside floor inside the barricade
+        const fl = FLOOR_LIMIT * scale;
+        ctx.fillStyle = "#15182a";
+        ctx.fillRect(w / 2 - fl, h / 2 - fl, fl * 2, fl * 2);
         // mat and ropes
         const half = (RING_LIMIT + 0.35) * scale;
         ctx.fillStyle = "#d9dde6";
@@ -38,7 +42,7 @@ export function TopDownView({ state, colors }: { state: MutableRefObject<MatchSt
           const x = toX(f.x);
           const y = toY(f.z);
           const down = ["down", "getup", "pinned", "submitted", "defeat"].includes(f.state);
-          ctx.fillStyle = colors[i];
+          ctx.fillStyle = colors[i] ?? "#94a3b8";
           ctx.beginPath();
           if (down) ctx.ellipse(x, y, 0.45 * scale, 0.22 * scale, f.facing, 0, Math.PI * 2);
           else ctx.arc(x, y, 0.3 * scale, 0, Math.PI * 2);

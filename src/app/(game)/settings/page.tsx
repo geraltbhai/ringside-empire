@@ -324,7 +324,7 @@ export default function SettingsPage() {
               </select>
             </Field>
             <Field label={`Playable match time limit: ${s.matchMinutes} minutes (real time)`}>
-              <input type="range" min={3} max={20} value={s.matchMinutes} className="w-full" onChange={(e) => run((d) => void (d.settings.matchMinutes = Number(e.target.value)))} />
+              <input type="range" min={3} max={60} value={s.matchMinutes} className="w-full" onChange={(e) => run((d) => void (d.settings.matchMinutes = Number(e.target.value)))} />
             </Field>
             <Field label="Graphics quality">
               <select className="h-10 w-full rounded-md border border-rope bg-arena px-2 text-sm" value={s.graphics ?? "high"} onChange={(e) => run((d) => void (d.settings.graphics = e.target.value as "high" | "low"), "Graphics updated")}>

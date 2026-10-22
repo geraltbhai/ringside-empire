@@ -307,7 +307,7 @@ export interface Segment {
   outcome: Outcome;
   isMainEvent: boolean;
   /** "played" when the user decides it in the playable 3D match. */
-  playedResult: { winnerSide: "A" | "B"; quality: number; durationSec: number; finish: string } | null;
+  playedResult: { winnerSide: "A" | "B" | "C"; quality: number; durationSec: number; finish: string } | null;
 }
 
 export type ShowType = "weekly" | "ple";

@@ -4,7 +4,7 @@ import { Crown, Pause, Play, RotateCcw } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import type React from "react";
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OverallBadge } from "@/components/game";
 import { SafeCanvas, webglAvailable } from "@/components/match3d/SafeCanvas";
 import type { MatchFx } from "@/components/match3d/MatchScene";
@@ -12,7 +12,7 @@ import { TopDownView } from "@/components/match3d/TopDownView";
 import { Portrait } from "@/components/Portrait";
 import { Button, Stars } from "@/components/ui/primitives";
 import { useAction } from "@/components/WeekControls";
-import { createMatch, kickoutTarget, type MatchInput, type MatchState, playedMatchQuality, stepMatch } from "@/engine/live-match";
+import { type BodyPart, createMatch, kickoutTarget, type MatchInput, type MatchState, playedMatchQuality, playerOf, stepMatch } from "@/engine/live-match";
 import { overall } from "@/engine/rating";
 import { qualityToStars } from "@/engine/simulation";
 import type { ControlAction, SegmentResult, Universe, Wrestler } from "@/engine/types";
@@ -28,6 +28,8 @@ export type MatchSource = { kind: "exhibition" } | { kind: "booking"; showId: st
 export interface MatchConfig {
   player: Wrestler;
   opponent: Wrestler;
+  /** More opponents for triple threats and fatal 4-ways (everyone for themselves). */
+  extra?: Wrestler[];
   titleId: string | null;
   source: MatchSource;
 }
@@ -59,16 +61,34 @@ function Bar({ value, tone, label, flip }: { value: number; tone: string; label:
   );
 }
 
+/** Damage per body part: a small figure that goes from green to red. */
+function BodyMap({ parts }: { parts: Record<BodyPart, number> }) {
+  const tone = (v: number) => (v < 25 ? "#34d399" : v < 50 ? "#facc15" : v < 75 ? "#fb923c" : "#ef4444");
+  return (
+    <svg viewBox="0 0 20 40" className="h-9 w-[18px] shrink-0" role="img" aria-label={`Damage: head ${Math.round(parts.head)}, body ${Math.round(parts.body)}, arms ${Math.round(parts.arms)}, legs ${Math.round(parts.legs)}`}>
+      <circle cx="10" cy="4.5" r="3.6" fill={tone(parts.head)} />
+      <rect x="6" y="9" width="8" height="13" rx="2" fill={tone(parts.body)} />
+      <rect x="1.5" y="9.5" width="3.5" height="12" rx="1.5" fill={tone(parts.arms)} />
+      <rect x="15" y="9.5" width="3.5" height="12" rx="1.5" fill={tone(parts.arms)} />
+      <rect x="6" y="23" width="3.5" height="15" rx="1.5" fill={tone(parts.legs)} />
+      <rect x="10.5" y="23" width="3.5" height="15" rx="1.5" fill={tone(parts.legs)} />
+    </svg>
+  );
+}
+
 function FighterHud({ w, f, side, u }: { w: Wrestler; f: MatchState["fighters"][number]; side: "left" | "right"; u: Universe }) {
   const flip = side === "right";
   return (
     <div className={cn("flex w-full max-w-md items-center gap-3", flip && "flex-row-reverse text-right")}>
       <Portrait w={w} className="w-12 shrink-0 ring-2 ring-black/50 sm:w-14" />
+      <BodyMap parts={f.parts} />
       <div className="min-w-0 flex-1 space-y-1">
         <div className={cn("flex items-center gap-2", flip && "flex-row-reverse")}>
           <span className="font-display truncate text-lg leading-none drop-shadow sm:text-2xl">{w.ringName}</span>
           <OverallBadge value={overall(w, u.settings)} size="sm" />
           {f.isPlayer && <span className="rounded bg-gold px-1 text-[10px] font-bold text-black">YOU</span>}
+          {f.firedUp > 0 && <span className="animate-pulse rounded bg-orange-500 px-1 text-[10px] font-bold text-black">FIRED UP</span>}
+          {f.zone === "floor" && <span className="rounded bg-white/15 px-1 text-[10px] font-bold">OUTSIDE</span>}
         </div>
         <Bar value={f.health} tone={f.health > 35 ? "bg-gradient-to-r from-rose-600 to-rose-400" : "bg-rose-500 animate-pulse"} label={`${w.ringName} health`} flip={flip} />
         <Bar value={f.stamina} tone="bg-gradient-to-r from-amber-500 to-yellow-300" label={`${w.ringName} stamina`} flip={flip} />
@@ -178,18 +198,17 @@ function snapshot(m: MatchState, phase: MatchFx["phase"]): HudSnapshot {
     state: {
       ...m,
       events: [],
-      fighters: m.fighters.map((f) => ({ ...f, move: f.move ? { ...f.move } : null, uniqueMoves: new Set(f.uniqueMoves), recentMoves: [...f.recentMoves], attrs: f.attrs })) as MatchState["fighters"],
+      fighters: m.fighters.map((f) => ({ ...f, move: f.move ? { ...f.move } : null, parts: { ...f.parts }, uniqueMoves: new Set(f.uniqueMoves), recentMoves: [...f.recentMoves], attrs: f.attrs, brain: { ...f.brain }, transition: f.transition ? { ...f.transition } : null })),
       referee: { ...m.referee },
       pin: m.pin ? { ...m.pin } : null,
-      ai: { ...m.ai },
     },
   };
 }
 
 /** The 3D (or 2D fallback) view. Memoised: HUD ticks re-render the overlay, never the scene graph. */
-const MatchView = memo(function MatchView({ use3d, player, opponent, state, fx, reducedMotion, lowGraphics }: { use3d: boolean; player: Wrestler; opponent: Wrestler; state: React.MutableRefObject<MatchState>; fx: React.MutableRefObject<MatchFx>; reducedMotion: boolean; lowGraphics: boolean }) {
+const MatchView = memo(function MatchView({ use3d, wrestlers, state, fx, reducedMotion, lowGraphics }: { use3d: boolean; wrestlers: Wrestler[]; state: React.MutableRefObject<MatchState>; fx: React.MutableRefObject<MatchFx>; reducedMotion: boolean; lowGraphics: boolean }) {
   const [failed3d, setFailed3d] = useState(false);
-  const colors: [string, string] = [player.appearance.primaryColor, opponent.appearance.primaryColor];
+  const colors = wrestlers.map((w) => w.appearance.primaryColor);
   if (!use3d || failed3d) {
     return (
       <div className="mx-auto flex h-full max-w-3xl flex-col pt-24">
@@ -202,7 +221,7 @@ const MatchView = memo(function MatchView({ use3d, player, opponent, state, fx, 
   }
   return (
     <SafeCanvas shadows={!lowGraphics} dpr={lowGraphics ? 1 : [1, 1.75]} camera={{ position: [0, 6, 12], fov: 45 }} fallback={<TopDownView state={state} colors={colors} />} onError={() => setFailed3d(true)}>
-      <MatchScene wrestlers={[player, opponent]} state={state} fx={fx} reducedMotion={reducedMotion} lowGraphics={lowGraphics} />
+      <MatchScene wrestlers={wrestlers} state={state} fx={fx} reducedMotion={reducedMotion} lowGraphics={lowGraphics} />
     </SafeCanvas>
   );
 });
@@ -210,11 +229,27 @@ const MatchView = memo(function MatchView({ use3d, player, opponent, state, fx, 
 export function LiveMatch({ u, config, onExit, onRematch }: { u: Universe; config: MatchConfig; onExit: () => void; onRematch: () => void }) {
   const run = useAction();
   const { player, opponent, titleId, source } = config;
+  const [entrants] = useState(() => [player, opponent, ...(config.extra ?? [])]);
+  const byId = useMemo(() => Object.fromEntries(entrants.map((w) => [w.id, w])), [entrants]);
   const controls = u.settings.controls;
   // The engine state is mutable and lives in a ref; the HUD renders from immutable snapshots (below).
-  const [initial] = useState(() => createMatch(player, opponent, { timeLimitSec: u.settings.matchMinutes * 60, difficulty: u.settings.difficulty, seed: `${u.seed}:${player.id}:${opponent.id}:${Date.now()}` }));
+  const [initial] = useState(() =>
+    createMatch(
+      entrants.map((w, i) => ({ wrestler: w, isPlayer: i === 0 })),
+      { timeLimitSec: u.settings.matchMinutes * 60, difficulty: u.settings.difficulty, seed: `${u.seed}:${entrants.map((w) => w.id).join(":")}:${Date.now()}` },
+    ),
+  );
   const state = useRef<MatchState>(initial);
-  const fx = useRef<MatchFx>({ shake: 0, sparks: [], phase: "intro", phaseTime: 0, flash: [0, 0], mat: 0, hitDir: [{ x: 0, z: 0 }, { x: 0, z: 0 }], big: [false, false] });
+  const fx = useRef<MatchFx>({
+    shake: 0,
+    sparks: [],
+    phase: "intro",
+    phaseTime: 0,
+    flash: entrants.map(() => 0),
+    mat: 0,
+    hitDir: entrants.map(() => ({ x: 0, z: 0 })),
+    big: entrants.map(() => false),
+  });
   const input = useRef<MatchInput>({ moveX: 0, moveZ: 0, run: false, pressed: {} });
   const held = useRef(new Set<ControlAction>());
   const paused = useRef(false);
@@ -253,8 +288,12 @@ export function LiveMatch({ u, config, onExit, onRematch }: { u: Universe; confi
         setOutcome({ ...base, recorded: "Draws in exhibition matches are not recorded." });
         return;
       }
+      if (entrants.length > 3) {
+        setOutcome({ ...base, recorded: "Fatal 4-Way exhibitions aren't recorded in history yet." });
+        return;
+      }
       const res = run((d) =>
-        recordExhibition(d, { sideA: [player.id], sideB: [opponent.id], winnerIds: [s.winner!], quality, titleId, durationSec: Math.round(s.time), finish: s.method }),
+        recordExhibition(d, { sideA: [player.id], sideB: [opponent.id], sideC: entrants[2] ? [entrants[2].id] : [], winnerIds: [s.winner!], quality, titleId, durationSec: Math.round(s.time), finish: s.method }),
       );
       setOutcome({ ...base, titleChange: res?.titleChange ?? null, recorded: res ? "Result recorded in match history, records and popularity." : "Could not record the result." });
     } else {
@@ -273,7 +312,7 @@ export function LiveMatch({ u, config, onExit, onRematch }: { u: Universe; confi
       });
       setOutcome({ ...base, recorded: ok ? "Result locked into the card. It counts when you run the show." : "Result not saved." });
     }
-  }, [source, run, player.id, opponent.id, titleId]);
+  }, [source, run, player.id, opponent.id, titleId, entrants]);
 
   // Development-only hook so automated playtests can read the match state.
   useEffect(() => {
@@ -329,7 +368,7 @@ export function LiveMatch({ u, config, onExit, onRematch }: { u: Universe; confi
             if (fi.moveId !== p.moveId && fi.move && ["light", "heavy", "running"].includes(fi.move.kind)) sfx.whoosh(fi.move.kind === "light" ? 0.3 : 0.8);
             // The body meets the canvas partway through the fall animation.
             if (fi.anim === "fall" && (p.anim !== "fall" || p.animTime < 0.42) && fi.animTime >= 0.42) {
-              const by = s.fighters[1 - i].move?.kind;
+              const by = fi.partner >= 0 ? s.fighters[fi.partner].move?.kind : undefined;
               const heavy = by === "finisher" || by === "grapple-power" || by === "signature" ? 1 : 0.6;
               sfx.bodyFall(heavy);
               f.mat = Math.max(f.mat, 0.6 + heavy * 0.4);
@@ -349,13 +388,13 @@ export function LiveMatch({ u, config, onExit, onRematch }: { u: Universe; confi
           for (const e of s.events) {
             if (e.type === "hit") {
               const ti = s.fighters.findIndex((x) => x.id === e.target);
-              const by = s.fighters[1 - ti];
+              const by = s.fighters.find((x) => x.id === e.by) ?? s.fighters[0];
               const len = Math.hypot(e.x - by.x, e.z - by.z) || 1;
               f.hitDir[ti] = { x: (e.x - by.x) / len, z: (e.z - by.z) / len };
               f.big[ti] = e.big;
               f.flash[ti] = 1;
               f.shake += e.big ? 1.2 : e.damage > 5 ? 0.45 : 0.15;
-              f.sparks.push({ x: e.x, z: e.z, y: 2.3, big: e.big, color: "#ffd27a" });
+              f.sparks.push({ x: e.x, z: e.z, y: e.y + 1.1, big: e.big, color: "#ffd27a" });
               sfx.hit(e.big ? 1 : Math.min(0.8, e.damage / 10));
               if (e.big) {
                 sfx.pop(0.9);
@@ -363,7 +402,7 @@ export function LiveMatch({ u, config, onExit, onRematch }: { u: Universe; confi
                 push(`${s.fighters.find((x) => x.id === e.by)?.name} hits the ${e.move}!`, "gold");
               }
             } else if (e.type === "reversal") {
-              f.sparks.push({ x: e.x, z: e.z, y: 2.3, big: false, color: "#7ea4ff" });
+              f.sparks.push({ x: e.x, z: e.z, y: e.y + 1.1, big: false, color: "#7ea4ff" });
               sfx.hit(0.4);
               sfx.pop(0.35);
               push(`${s.fighters.find((x) => x.id === e.by)?.name} reverses the ${e.move}!`, "good");
@@ -380,6 +419,21 @@ export function LiveMatch({ u, config, onExit, onRematch }: { u: Universe; confi
               push(`${s.fighters.find((x) => x.id === e.by)?.name} escapes the hold!`, "good");
             } else if (e.type === "tapout") {
               push(`${s.fighters.find((x) => x.id === e.by)?.name} taps out!`, "bad");
+            } else if (e.type === "ringout") {
+              sfx.bodyFall(1);
+              sfx.pop(1);
+              sfx.ooh(1);
+              f.shake += 0.8;
+              push(`${s.fighters.find((x) => x.id === e.target)?.name} goes over the top rope!`, "gold");
+            } else if (e.type === "broken") {
+              sfx.pop(0.9);
+              push(`${s.fighters.find((x) => x.id === e.by)?.name} breaks up the pin!`, "good");
+            } else if (e.type === "fired-up") {
+              sfx.stinger();
+              sfx.pop(1);
+            } else if (e.type === "outcount") {
+              sfx.matSlap();
+              if (e.count >= 7) sfx.pop(0.5);
             } else if (e.type === "message") {
               if (e.tone === "gold") sfx.stinger();
               push(e.text, e.tone);
@@ -461,13 +515,19 @@ export function LiveMatch({ u, config, onExit, onRematch }: { u: Universe; confi
 
   const s = hud.state;
   const f = { phase: hud.phase };
-  const [pf, of] = s.fighters;
+  const pf = playerOf(s);
+  const pIdx = s.fighters.indexOf(pf);
+  // the HUD's right side follows whoever the player is dealing with
+  const of = (pf.target >= 0 && s.fighters[pf.target]) || s.fighters.find((x) => x !== pf)!;
+  const others = s.fighters.filter((x) => x !== pf && x !== of);
+  const attacker = s.fighters.find((x) => x !== pf && x.state === "attack" && x.move && !x.moveHit && x.move.reversalWindow > 0 && x.target === pIdx && x.stateTime >= x.move.startup - x.move.reversalWindow - 0.05);
   const remaining = Math.max(0, s.timeLimit - s.time);
   const clock = `${Math.floor(remaining / 60)}:${String(Math.floor(remaining % 60)).padStart(2, "0")}`;
   const playerPinned = s.pin && s.fighters[s.pin.defender].isPlayer;
-  const reversalOpen = of.state === "attack" && of.move && !of.moveHit && of.move.reversalWindow > 0 && of.stateTime >= of.move.startup - of.move.reversalWindow - 0.05;
+  const reversalOpen = !!attacker;
   const lockupPrompt = pf.state === "lockup";
-  const lockedInPrompt = pf.state === "grappled" && of.state === "lockup";
+  const lockedInPrompt = pf.state === "grappled" && pf.partner >= 0 && s.fighters[pf.partner].state === "lockup";
+  const pinner = s.pin ? s.fighters[s.pin.attacker] : null;
   const now = hud.now;
   const pressTouch = (a: ControlAction) => {
     if (fx.current.phase === "intro") {
@@ -492,13 +552,13 @@ export function LiveMatch({ u, config, onExit, onRematch }: { u: Universe; confi
     <div className="fixed inset-0 z-40 bg-arena">
       {/* renderer */}
       <div className="absolute inset-0">
-        <MatchView use3d={use3d} player={player} opponent={opponent} state={state} fx={fx} reducedMotion={u.settings.reducedMotion} lowGraphics={u.settings.graphics === "low"} />
+        <MatchView use3d={use3d} wrestlers={entrants} state={state} fx={fx} reducedMotion={u.settings.reducedMotion} lowGraphics={u.settings.graphics === "low"} />
       </div>
 
       {/* HUD */}
       <div className="pointer-events-none absolute inset-0 flex flex-col">
         <div className="flex items-start justify-between gap-3 bg-gradient-to-b from-black/80 to-transparent p-3 sm:p-5">
-          <FighterHud w={player} f={pf} side="left" u={u} />
+          <FighterHud w={byId[pf.id]} f={pf} side="left" u={u} />
           <div className="shrink-0 text-center">
             <div className="font-display text-3xl tabular-nums drop-shadow sm:text-4xl">{clock}</div>
             {title && (
@@ -510,11 +570,32 @@ export function LiveMatch({ u, config, onExit, onRematch }: { u: Universe; confi
               <Pause size={12} className="inline" /> {keyLabel(controls.pause)}
             </button>
           </div>
-          <FighterHud w={opponent} f={of} side="right" u={u} />
+          <FighterHud w={byId[of.id]} f={of} side="right" u={u} />
         </div>
+        {others.length > 0 && (
+          <div className="flex justify-center gap-3 px-3">
+            {others.map((x) => (
+              <div key={x.id} className="w-36 rounded bg-black/50 px-2 py-1">
+                <div className="flex items-center justify-between text-xs font-semibold">
+                  <span className="truncate">{x.name}</span>
+                  {x.zone === "floor" && <span className="text-[10px] text-muted">OUT</span>}
+                </div>
+                <Bar value={x.health} tone="bg-rose-500" label={`${x.name} health`} />
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="relative flex-1">
           {/* referee count / meters */}
+          {!s.over && !s.pin && s.referee.outCount >= 1 && (
+            <div className="absolute left-1/2 top-[14%] -translate-x-1/2 text-center">
+              <div className="font-cond text-sm font-semibold uppercase tracking-widest text-white/70">Count-out</div>
+              <div key={Math.floor(s.referee.outCount)} className="animate-spotlight font-display text-6xl text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.9)]">
+                {Math.floor(s.referee.outCount)}
+              </div>
+            </div>
+          )}
           {!s.over && s.pin?.kind === "pin" && s.referee.count > 0 && (
             <div key={s.referee.count} className="animate-spotlight absolute left-1/2 top-[18%] -translate-x-1/2 font-display text-8xl text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.9)]">
               {s.referee.count}
@@ -527,7 +608,7 @@ export function LiveMatch({ u, config, onExit, onRematch }: { u: Universe; confi
                 <div
                   className="h-full bg-gold"
                   style={{
-                    width: `${Math.min(100, (s.pin!.mash / (s.pin!.kind === "pin" ? kickoutTarget(pf, of.recentMoves.at(-1) === "finisher") : 6 + (100 - pf.health) * 0.25)) * 100)}%`,
+                    width: `${Math.min(100, (s.pin!.mash / (s.pin!.kind === "pin" ? kickoutTarget(pf, pinner?.recentMoves.at(-1) === "finisher", s) : 6 + (100 - pf.health) * 0.25)) * 100)}%`,
                   }}
                 />
               </div>
@@ -572,10 +653,11 @@ export function LiveMatch({ u, config, onExit, onRematch }: { u: Universe; confi
               <Crown size={14} /> {title.name}
             </div>
           )}
-          <div className="flex items-end gap-6 sm:gap-14">
-            {[player, opponent].map((w, i) => (
-              <div key={w.id} className={cn("animate-spotlight", i === 0 ? "text-right" : "text-left")} style={{ animationDelay: `${i * 0.5}s` }}>
-                <div className="font-display text-4xl sm:text-6xl">{w.ringName}</div>
+          {entrants.length > 2 && <div className="font-cond mb-2 text-lg font-semibold uppercase tracking-[0.3em] text-gold-light">{entrants.length === 3 ? "Triple Threat" : "Fatal 4-Way"} · first fall wins</div>}
+          <div className="flex flex-wrap items-end justify-center gap-6 sm:gap-14">
+            {entrants.map((w, i) => (
+              <div key={w.id} className={cn("animate-spotlight", entrants.length === 2 && i === 0 ? "text-right" : "text-left")} style={{ animationDelay: `${i * 0.5}s` }}>
+                <div className={cn("font-display", entrants.length > 2 ? "text-3xl sm:text-5xl" : "text-4xl sm:text-6xl")}>{w.ringName}</div>
                 <div className="mt-1 text-sm text-muted">
                   {heightLabel(w.heightIn)} · {w.weightLbs} lb · {w.record.wins}–{w.record.losses}
                 </div>
@@ -624,10 +706,10 @@ export function LiveMatch({ u, config, onExit, onRematch }: { u: Universe; confi
             <h2 className="font-display mt-1 text-5xl">
               {outcome.winnerId ? (
                 <>
-                  <span className="gold-text">{outcome.winnerId === player.id ? player.ringName : opponent.ringName}</span> wins
+                  <span className="gold-text">{byId[outcome.winnerId]?.ringName}</span> wins
                 </>
               ) : (
-                "Time-limit draw"
+                outcome.method
               )}
             </h2>
             {outcome.titleChange && (
@@ -643,8 +725,11 @@ export function LiveMatch({ u, config, onExit, onRematch }: { u: Universe; confi
               <thead className="text-xs text-muted">
                 <tr>
                   <th className="py-1 text-left font-normal" />
-                  <th className="py-1 text-right font-normal">{player.ringName}</th>
-                  <th className="py-1 text-right font-normal">{opponent.ringName}</th>
+                  {s.fighters.map((x) => (
+                    <th key={x.id} className="py-1 text-right font-normal">
+                      {x.name}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-rope">
@@ -654,18 +739,23 @@ export function LiveMatch({ u, config, onExit, onRematch }: { u: Universe; confi
                     ["Different moves", (x: typeof pf) => x.uniqueMoves.size],
                     ["Reversals", (x: typeof pf) => x.reversals],
                     ["Kick-outs", (x: typeof pf) => x.kickouts],
+                    ["Comebacks", (x: typeof pf) => x.comebacks],
+                    ["Sent outside", (x: typeof pf) => x.ringOuts],
                     ["Health left", (x: typeof pf) => Math.round(x.health)],
                   ] as const
                 ).map(([label, get]) => (
                   <tr key={label}>
                     <td className="py-1 text-muted">{label}</td>
-                    <td className="py-1 text-right tabular-nums">{get(pf)}</td>
-                    <td className="py-1 text-right tabular-nums">{get(of)}</td>
+                    {s.fighters.map((x) => (
+                      <td key={x.id} className="py-1 text-right tabular-nums">
+                        {get(x)}
+                      </td>
+                    ))}
                   </tr>
                 ))}
                 <tr>
                   <td className="py-1 text-muted">Near falls</td>
-                  <td className="py-1 text-right tabular-nums" colSpan={2}>
+                  <td className="py-1 text-right tabular-nums" colSpan={s.fighters.length}>
                     {s.nearFalls}
                   </td>
                 </tr>

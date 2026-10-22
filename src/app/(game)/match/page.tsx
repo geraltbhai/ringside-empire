@@ -96,6 +96,8 @@ function MatchPageInner() {
   });
   const [titleId, setTitleId] = useState<string>("");
   const [side, setSide] = useState<"A" | "B">("A");
+  const [mode, setMode] = useState<"singles" | "triple" | "fatal4">("singles");
+  const [extraIds, setExtraIds] = useState<string[]>([]);
   const [running, setRunning] = useState<{ config: MatchConfig; key: number } | null>(null);
 
   // ── Booked match ("Play this match" from a show card) ──
@@ -110,7 +112,7 @@ function MatchPageInner() {
     const b = u.wrestlers[seg.sideB[0]];
     const injured = [a, b].filter((w) => w.injury);
     const start = (k = 0) =>
-      setRunning({ key: Date.now() + k, config: { player: side === "A" ? a : b, opponent: side === "A" ? b : a, titleId: seg.titleId, source: { kind: "booking", showId: show.id, segId: seg.id, playerSide: side } } });
+      setRunning((prev) => ({ key: (prev?.key ?? 0) + 1 + k, config: { player: side === "A" ? a : b, opponent: side === "A" ? b : a, titleId: seg.titleId, source: { kind: "booking", showId: show.id, segId: seg.id, playerSide: side } } }));
     if (running) return <LiveMatch key={running.key} u={u} config={running.config} onExit={() => setRunning(null)} onRematch={() => start(1)} />;
     return (
       <div className="space-y-6">
@@ -155,8 +157,16 @@ function MatchPageInner() {
   const titles = opponent
     ? Object.values(u.championships).filter((t) => !t.isTag && t.division === player.division && t.holderIds.length === 1 && [player.id, opponent.id].includes(t.holderIds[0]))
     : [];
-  const titleAllowed = opponent && isSigned(player) && isSigned(opponent);
-  const start = (k = 0) => opponent && setRunning({ key: Date.now() + k, config: { player, opponent, titleId: titleAllowed && titleId ? titleId : null, source: { kind: "exhibition" } } });
+  const titleAllowed = opponent && isSigned(player) && isSigned(opponent) && mode === "singles";
+  const extrasNeeded = mode === "triple" ? 1 : mode === "fatal4" ? 2 : 0;
+  // fill extra slots with distinct healthy wrestlers
+  const extras = Array.from({ length: extrasNeeded }, (_, i) => {
+    const taken = new Set([player.id, opponentId, ...extraIds.slice(0, i)]);
+    const chosen = extraIds[i] && !taken.has(extraIds[i]) ? u.wrestlers[extraIds[i]] : undefined;
+    return chosen ?? signedStars.find((w) => !taken.has(w.id) && w.division === player.division && !w.injury)!;
+  });
+  const start = (k = 0) =>
+    opponent && setRunning((prev) => ({ key: (prev?.key ?? 0) + 1 + k, config: { player, opponent, extra: extras, titleId: titleAllowed && titleId ? titleId : null, source: { kind: "exhibition" } } }));
   if (running) return <LiveMatch key={running.key} u={u} config={running.config} onExit={() => setRunning(null)} onRematch={() => start(1)} />;
 
   const random = () => {
@@ -169,7 +179,7 @@ function MatchPageInner() {
     <div className="space-y-6">
       <PageHeader
         title="Play a match"
-        subtitle="A one-on-one match in the 3D ring against an AI opponent. The result goes into this universe's history, records and popularity."
+        subtitle="Singles, Triple Threat or Fatal 4-Way in the 3D ring against AI opponents. Fight anywhere in the arena — roll out under the ropes, brawl on the floor, beat the count. Results go into this universe's history, records and popularity."
         actions={
           <Link href="/booking">
             <Button variant="ghost">Play a booked match from a show card instead</Button>
@@ -197,7 +207,22 @@ function MatchPageInner() {
           </div>
           <div className="font-display self-center text-center text-6xl text-muted">vs</div>
           <div className="space-y-4">
-            <Field label="Opponent (AI)">
+            <Field label="Match type">
+              <div className="flex gap-2">
+                {(
+                  [
+                    ["singles", "Singles"],
+                    ["triple", "Triple Threat"],
+                    ["fatal4", "Fatal 4-Way"],
+                  ] as const
+                ).map(([m, label]) => (
+                  <button key={m} onClick={() => (setMode(m), setTitleId(""))} aria-pressed={mode === m} className={cn("flex-1 rounded-md px-3 py-2 text-sm font-semibold ring-1", mode === m ? "bg-ink text-arena ring-ink" : "ring-rope hover:ring-muted")}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </Field>
+            <Field label={extrasNeeded ? "Opponents (AI) — everyone for themselves" : "Opponent (AI)"}>
               <div className="flex gap-2">
                 <WrestlerSelect u={u} value={opponentId} label="Opponent" onChange={(id) => (setOpponentId(id), setTitleId(""))} exclude={playerId} division={player.division} />
                 <Button onClick={random} title="Random opponent" aria-label="Random opponent">
@@ -205,7 +230,30 @@ function MatchPageInner() {
                 </Button>
               </div>
             </Field>
-            {opponent && <TaleOfTheTape u={u} w={opponent} side="right" />}
+            {extras.map((w, i) => (
+              <div key={i} className="flex gap-2">
+                <WrestlerSelect
+                  u={u}
+                  value={w.id}
+                  label={`Opponent ${i + 2}`}
+                  onChange={(id) => setExtraIds((xs) => Object.assign([...xs], { [i]: id }))}
+                  exclude={playerId}
+                  division={player.division}
+                />
+                <Button
+                  onClick={() => {
+                    const pool = Object.values(u.wrestlers).filter((x) => x.division === player.division && ![player.id, opponentId, ...extras.map((e) => e.id)].includes(x.id) && !x.injury);
+                    const pick = pool[Math.floor(Math.random() * pool.length)];
+                    if (pick) setExtraIds((xs) => Object.assign([...xs], { [i]: pick.id }));
+                  }}
+                  title="Random opponent"
+                  aria-label={`Random opponent ${i + 2}`}
+                >
+                  <Shuffle size={16} />
+                </Button>
+              </div>
+            ))}
+            {opponent && !extrasNeeded && <TaleOfTheTape u={u} w={opponent} side="right" />}
           </div>
         </div>
 
@@ -220,7 +268,7 @@ function MatchPageInner() {
               ))}
             </select>
           </Field>
-          <Button variant="gold" size="lg" disabled={!opponent || !!player.injury || !!opponent?.injury} onClick={() => start()}>
+          <Button variant="gold" size="lg" disabled={!opponent || !!player.injury || !!opponent?.injury || extras.some((w) => !w || w.injury)} onClick={() => start()}>
             <Gamepad2 size={18} /> Ring the bell
           </Button>
         </div>
@@ -243,6 +291,9 @@ function MatchPageInner() {
             <li>Watch for the blue reversal prompt as your opponent winds up and press reverse at that moment. Mistimed presses lock you out briefly.</li>
             <li>Pin a downed opponent. The lower their health, and especially right after a finisher, the harder it is for them to kick out.</li>
             <li>When you are pinned or caught in a submission, mash the pin key to fill the escape meter. A finisher is powerful, but it does not automatically win.</li>
+            <li>Walk into the ropes to roll out to the floor; walk into the apron to roll back in. In singles the referee counts to ten while anyone is outside.</li>
+            <li>Big hits near the ropes can send people over the top. Damage builds per body part — worn-down legs slow you, worn arms hit softer, and submissions on a damaged limb are harder to escape.</li>
+            <li>Take enough punishment while hurt and the crowd behind you, and you&apos;ll fire up for a comeback. In multi-man matches, break up pins before the three!</li>
           </ul>
         </Panel>
       </div>

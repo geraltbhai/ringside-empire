@@ -60,12 +60,15 @@ export class RagdollWorld {
   private acc = 0;
   constructor(
     private R: typeof RAPIER,
+    /** Height of the ring canvas. */
     floorY: number,
   ) {
     this.world = new R.World({ x: 0, y: -9.81, z: 0 });
-    const floor = R.RigidBodyDesc.fixed().setTranslation(0, floorY - 0.5, 0);
-    const fb = this.world.createRigidBody(floor);
-    this.world.createCollider(R.ColliderDesc.cuboid(4, 0.5, 4).setFriction(0.9).setRestitution(0.15).setCollisionGroups(FLOOR_GROUPS), fb);
+    const fixed = this.world.createRigidBody(R.RigidBodyDesc.fixed());
+    // the ring: a solid block whose top is the canvas
+    this.world.createCollider(R.ColliderDesc.cuboid(3.35, floorY / 2, 3.35).setTranslation(0, floorY / 2, 0).setFriction(0.9).setRestitution(0.15).setCollisionGroups(FLOOR_GROUPS), fixed);
+    // the arena floor around it
+    this.world.createCollider(R.ColliderDesc.cuboid(12, 0.5, 12).setTranslation(0, -0.5, 0).setFriction(0.95).setRestitution(0.05).setCollisionGroups(FLOOR_GROUPS), fixed);
   }
   step(dt: number) {
     this.acc += Math.min(dt, 0.1);

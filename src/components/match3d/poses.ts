@@ -210,6 +210,31 @@ export function poseFor(anim: string, t: number): Pose {
       return p({ spine: -0.05, head: -0.1, lShoulderSide: 0.75, rShoulderSide: 0.75, lArmTwist: -0.9, rArmTwist: -0.9, lElbow: 1.75, rElbow: 1.75, lShoulder: -0.25, rShoulder: -0.25, lHip: 0.05, rHip: -0.05 });
     case "most-muscular":
       return p({ spine: 0.35, head: 0.05, lShoulder: 0.5, rShoulder: 0.5, lShoulderSide: 0.35, rShoulderSide: 0.35, lArmTwist: 0.9, rArmTwist: 0.9, lElbow: 1.7, rElbow: 1.7, lKnee: 0.35, rKnee: 0.35, lHip: 0.3, rHip: 0.3, rootY: -0.06 });
+    case "roll-out":
+      // drop to a knee, roll under the bottom rope, land on the feet outside
+      return keys(t, [
+        [0, STANCE],
+        [0.2, { rootY: -0.45, spine: 1.0, lHip: 1.5, rHip: 1.2, lKnee: 2.0, rKnee: 1.6, lShoulder: 0.8, rShoulder: 0.8 }],
+        [0.55, { rootY: -0.7, rootTilt: 1.2, spine: 1.2, lHip: 1.8, rHip: 1.8, lKnee: 2.2, rKnee: 2.2, lShoulder: 1.6, rShoulder: 1.6, lElbow: 1.2, rElbow: 1.2 }],
+        [0.85, { rootY: -0.3, spine: 0.6, lHip: 1.1, rHip: 0.9, lKnee: 1.4, rKnee: 1.0 }],
+        [1, STANCE],
+      ]);
+    case "roll-in":
+      return keys(t, [
+        [0, STANCE],
+        [0.25, { rootY: -0.25, spine: 1.1, lShoulder: 1.9, rShoulder: 1.9, lElbow: 0.5, rElbow: 0.5, lHip: 0.9, rHip: 0.3, lKnee: 1.2 }],
+        [0.55, { rootY: -0.75, rootTilt: 1.35, spine: 0.9, lHip: 1.6, rHip: 1.6, lKnee: 2.0, rKnee: 2.0, lShoulder: 1.4, rShoulder: 1.4, lElbow: 1.4, rElbow: 1.4 }],
+        [0.85, { rootY: -0.45, spine: 1.0, lHip: 1.5, rHip: 1.2, lKnee: 2.0, rKnee: 1.6 }],
+        [1, STANCE],
+      ]);
+    case "tumble":
+      // flipped over the top rope: back first, legs over, crash to the floor
+      return keys(t, [
+        [0, { spine: -0.4, head: -0.4, lShoulderSide: 1.0, rShoulderSide: 1.0 }],
+        [0.3, { rootTilt: -1.6, rootY: 0.1, spine: -0.3, lShoulderSide: 1.5, rShoulderSide: 1.5, lHip: 1.2, rHip: 1.0, lKnee: 0.8, rKnee: 0.6 }],
+        [0.7, { rootTilt: -3.0, rootY: -0.2, spine: 0.2, lShoulderSide: 1.2, rShoulderSide: 1.3, lHip: 0.6, rHip: 0.8, lKnee: 0.5, rKnee: 0.7 }],
+        [1, { rootY: -1.02, rootTilt: -1.5, lShoulderSide: 1.4, rShoulderSide: 1.4, lHip: 0.2, rHip: 0.1, lKnee: 0.3 }],
+      ]);
     case "taunt":
       return p({ spine: -0.2, head: -0.3, lShoulder: 0.6, rShoulder: 2.9, rShoulderSide: 0.6, rElbow: 0.4 * Math.abs(Math.sin(t * 4)) });
     default:
