@@ -12,6 +12,7 @@ import type { Appearance, Wrestler } from "@/engine/types";
 import * as sfx from "@/lib/sfx";
 import { ArenaLights, ArenaShell, RING, Ring } from "./ArenaScene";
 import { type Theme, themeFor } from "./branding";
+import { ArenaEnvironment } from "./Environment";
 import { loadRapier, type Ragdoll, RagdollWorld } from "./human/ragdoll";
 import { type RigDriver, WrestlerModel } from "./WrestlerModel";
 
@@ -350,6 +351,7 @@ export default function MatchScene({ wrestlers, state, fx, reducedMotion, lowGra
       <color attach="background" args={["#05060a"]} />
       <fog attach="fog" args={["#05060a", 18, 40]} />
       <ArenaLights shadows={!lowGraphics} />
+      <ArenaEnvironment intensity={0.3} />
       <ArenaShell theme={theme} heat={() => state.current.crowdHeat} crowdCount={lowGraphics ? 500 : 1400} />
       <BouncingRing state={state} fx={fx} bounce={bounce} theme={theme} />
       <Fighters wrestlers={wrestlers} state={state} fx={fx} bounce={bounce} />

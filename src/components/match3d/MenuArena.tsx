@@ -4,6 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import { ROSTER_WRESTLERS } from "@/data/seed";
 import { ArenaLights, ArenaShell, Ring } from "./ArenaScene";
+import { ArenaEnvironment } from "./Environment";
 import { SafeCanvas } from "./SafeCanvas";
 import { type RigDriver, WrestlerModel } from "./WrestlerModel";
 
@@ -47,6 +48,7 @@ export default function MenuArena() {
       <color attach="background" args={["#05060a"]} />
       <fog attach="fog" args={["#05060a", 16, 38]} />
       <ArenaLights />
+      <ArenaEnvironment intensity={0.3} />
       <ArenaShell heat={0.35} crowdCount={1000} />
       <Ring />
       <Pair />

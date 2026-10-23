@@ -17,11 +17,11 @@ import { hashString } from "@/engine/rng";
 import type { Appearance, Wrestler } from "@/engine/types";
 import { type HumanAssets, loadHumanAssets } from "./human/assets";
 import type { HumanBase } from "./human/base";
-import { buildPartGeometry, buildShell, createCardMaterial, createEyeMaterial, createHairMaterial, hairMask } from "./human/parts";
+import { browMask, buildFurGeometry, buildPartGeometry, createCardMaterial, createEyeMaterial, createFurMaterial, facialHairMask, type FurStyle, hairMask } from "./human/parts";
 import { solveArmIK } from "./human/ik";
 import { buildRig, type Rig } from "./human/rig";
 import { sculptWrestler } from "./human/sculpt";
-import { createSkinMaterial } from "./human/skin";
+import { createSkinMaterial, gearTextTexture } from "./human/skin";
 import { NEUTRAL, type Pose, poseFor } from "./poses";
 
 export interface RigDriver {
@@ -128,7 +128,8 @@ export function build(assets: HumanAssets, w: ModelSource, castShadow: boolean) 
   const tone = new THREE.Color(a.skinTone);
   const skinKey = tone.r * 0.3 + tone.g * 0.59 + tone.b * 0.11 < 0.22 ? "skin_dark" : "skin_light";
   const fallbackMean = new THREE.Vector3(0.5, 0.4, 0.35);
-  const { material, uniforms } = createSkinMaterial(a, lm, seed, tex[skinKey] ?? null, mean[`${skinKey}_body`] ?? fallbackMean, mean[`${skinKey}_head`] ?? fallbackMean);
+  const textMap = a.gearText ? gearTextTexture(a.gearText, a.accentColor ?? a.secondaryColor) : null;
+  const { material, uniforms } = createSkinMaterial(a, lm, seed, tex[skinKey] ?? null, mean[`${skinKey}_body`] ?? fallbackMean, mean[`${skinKey}_head`] ?? fallbackMean, textMap);
 
   const body = new THREE.SkinnedMesh(sculpt.geometry, material);
   body.castShadow = castShadow;
@@ -142,6 +143,7 @@ export function build(assets: HumanAssets, w: ModelSource, castShadow: boolean) 
   const group = new THREE.Group();
   group.add(body);
   const disposables: { dispose: () => void }[] = [sculpt.geometry, material];
+  if (textMap) disposables.push(textMap);
   const skinned = (g: THREE.BufferGeometry, mat: THREE.Material, shadow = castShadow) => {
     const m = new THREE.SkinnedMesh(g, mat);
     m.castShadow = shadow;
@@ -156,34 +158,47 @@ export function build(assets: HumanAssets, w: ModelSource, castShadow: boolean) 
     if (p) skinned(buildPartGeometry(p, base, sculpt.topoDisp), mat, shadow);
   };
 
-  // eyes, brows and lashes (fitted MakeHuman parts)
+  const r = new THREE.Vector3();
+  const fur = (mask: (p: THREE.Vector3) => number, layers: number, style: FurStyle, color: string, shadow = false) => {
+    const g = buildFurGeometry(sculpt.geometry, (p) => mask(r.copy(p)), layers);
+    if (!g) return;
+    const mat = createFurMaterial(color, style);
+    disposables.push(mat);
+    skinned(g, mat, shadow);
+  };
+
+  // eyes and lashes (fitted MakeHuman parts), brows as dense short fur
   const eyeMat = createEyeMaterial(tex.iris, IRIS[seed % IRIS.length]);
   disposables.push(eyeMat);
   part("eyes", eyeMat, false);
-  if (!a.mask) {
-    const browStyle = seed % 4 === 0 ? "eyebrow_thick" : seed % 4 === 3 ? "eyebrow_thin" : "eyebrow_medium";
-    const browMat = createCardMaterial(tex[browStyle], a.hairColor, mean[browStyle], { sheen: 0.2 });
+  const hairTone = new THREE.Color(a.hairColor);
+  // brows and beards read a touch darker than the scalp hair
+  const browColor = "#" + hairTone.clone().multiplyScalar(0.75).getHexString();
+  if (!a.mask || a.maskStyle === "eyes" || a.maskStyle === "half") {
     const lashMat = createCardMaterial(tex.eyelashes, "#120d0a", mean.eyelashes, { sheen: 0 });
-    disposables.push(browMat, lashMat);
-    part(browStyle, browMat, false);
+    disposables.push(lashMat);
     part("eyelashes", lashMat, false);
   }
-
-  // hair: MakeHuman hair cards for short, long and ponytail; a sculpted shell for mohawks
   if (!a.mask) {
-    const card = { short: "hair_short", long: "hair_long", ponytail: "hair_ponytail" }[a.hairStyle as "short" | "long" | "ponytail"];
+    const thick = 0.9 + ((seed >>> 4) % 5) * 0.12 + a.bulk * 0.2;
+    fur((p) => browMask(p, lm, thick), 7, { length: 0.0045, density: 2100, cover: 0.9, thickness: 0.32, comb: [1, 0.25, 0.2], solidBase: true }, browColor);
+
+    // facial hair
+    if (a.facialHair === "beard") fur((p) => facialHairMask("beard", p, lm), 12, { length: 0.012, density: 1250, cover: 0.9, thickness: 0.42, comb: [0.35, -1, 0.35], solidBase: false }, browColor, castShadow);
+    if (a.facialHair === "goatee") fur((p) => facialHairMask("goatee", p, lm), 10, { length: 0.009, density: 1300, cover: 0.9, thickness: 0.42, comb: [0.2, -1, 0.3], solidBase: false }, browColor);
+    if (a.facialHair === "stubble") fur((p) => facialHairMask("stubble", p, lm), 3, { length: 0.0016, density: 2800, cover: 0.55, thickness: 0.3, comb: [0, -1, 0.4], solidBase: false }, browColor);
+
+    // hair: MakeHuman hair cards for long and ponytail; fur for buzz, short and mohawk
+    const card = { long: "hair_long", ponytail: "hair_ponytail" }[a.hairStyle as "long" | "ponytail"];
     if (card && tex[card]) {
       const hairMat = createCardMaterial(tex[card], a.hairColor, mean[card]);
       disposables.push(hairMat);
       part(card, hairMat);
     }
-    const r = new THREE.Vector3();
-    const shellMat = createHairMaterial(a.hairColor);
-    disposables.push(shellMat);
-    if (a.hairStyle === "mohawk") {
-      const g = buildShell(sculpt.geometry, (p) => hairMask("mohawk", r.copy(p), lm), 0.03);
-      if (g) skinned(g, shellMat);
-    }
+    if (a.hairStyle === "buzz") fur((p) => hairMask("short", p, lm), 4, { length: 0.0025, density: 2400, cover: 0.8, thickness: 0.32, comb: [0, -0.2, -1], solidBase: true }, a.hairColor);
+    if (a.hairStyle === "short") fur((p) => hairMask("short", p, lm), 14, { length: 0.016, density: 1150, cover: 0.95, thickness: 0.4, comb: [0.25, -0.15, -1], solidBase: true }, a.hairColor, castShadow);
+    if (a.hairStyle === "mohawk") fur((p) => hairMask("mohawk", p, lm), 16, { length: 0.05, density: 1000, cover: 0.95, thickness: 0.42, comb: [0, 0.6, -1], solidBase: true }, a.hairColor, castShadow);
+    if (card) fur((p) => hairMask("short", p, lm), 6, { length: 0.006, density: 1300, cover: 0.95, thickness: 0.42, comb: [0.2, -0.3, -1], solidBase: true }, a.hairColor);
   }
 
   return {

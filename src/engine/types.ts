@@ -131,7 +131,25 @@ export interface Appearance {
   gloves?: boolean;
   elbowPads?: boolean;
   facePaint?: "none" | "warrior" | "crow" | "skull" | "demon";
+  /** Third gear colour for patterns, trim and lettering. */
+  accentColor?: string;
+  gearPattern?: GearPattern;
+  /** Up to 8 characters printed on the trunks / tights (initials, a catchphrase). */
+  gearText?: string;
+  maskStyle?: MaskStyle;
+  maskPattern?: MaskPattern;
+  bootStyle?: "boots" | "kickpads" | "sneakers" | "barefoot";
+  gloveStyle?: "fingerless" | "full" | "wraps";
+  armSleeve?: "none" | "left" | "right" | "both";
+  kneeSleeves?: boolean;
 }
+
+export const GEAR_PATTERNS = ["solid", "stripes", "flames", "stars", "camo", "checker", "tribal", "fade", "lightning", "splatter", "snake"] as const;
+export type GearPattern = (typeof GEAR_PATTERNS)[number];
+export const MASK_STYLES = ["luchador", "full", "half", "eyes", "skull"] as const;
+export type MaskStyle = (typeof MASK_STYLES)[number];
+export const MASK_PATTERNS = ["plain", "flames", "stripes", "stars", "cross", "web", "wings", "teeth"] as const;
+export type MaskPattern = (typeof MASK_PATTERNS)[number];
 
 export interface FaceShape {
   jaw: number;
@@ -249,6 +267,18 @@ export type RivalryStage = 0 | 1 | 2 | 3 | 4;
 export const RIVALRY_STAGES = ["Initial conflict", "Escalation", "Confrontation", "Major match", "Resolution"];
 export type RivalryStatus = "active" | "paused" | "resolved";
 export type RivalryPayoff = "title-match" | "grudge-match" | "stipulation-match" | "tag-showdown";
+export const RIVALRY_THEMES = ["personal", "title-pursuit", "betrayal", "respect", "legacy", "jealousy", "revenge", "invasion"] as const;
+export type RivalryTheme = (typeof RIVALRY_THEMES)[number];
+export const RIVALRY_THEME_LABELS: Record<RivalryTheme, string> = {
+  personal: "Personal grudge",
+  "title-pursuit": "Chasing the gold",
+  betrayal: "Betrayal",
+  respect: "Competitive respect",
+  legacy: "Legacy / old guard vs new",
+  jealousy: "Jealousy",
+  revenge: "Revenge",
+  invasion: "Invasion / faction war",
+};
 
 export interface RivalryEvent {
   week: number;
@@ -272,6 +302,10 @@ export interface Rivalry {
   bWins: number;
   events: RivalryEvent[];
   origin: string;
+  /** Story flavour; drives promo dialogue. Older saves default to "personal". */
+  theme?: RivalryTheme;
+  /** Stipulation for the payoff match when the payoff is a stipulation match. */
+  stipulation?: Stipulation;
 }
 
 export interface Venue {
@@ -332,6 +366,13 @@ export interface SegmentResult {
   titleChange: { titleId: string; newHolderIds: string[]; previousHolderIds: string[] } | null;
   qualityBreakdown: Record<string, number>;
   injuries: { wrestlerId: string; weeks: number; description: string }[];
+  /** Spoken lines for talk segments; speakerId null is a stage direction. */
+  dialogue?: DialogueLine[];
+}
+
+export interface DialogueLine {
+  speakerId: string | null;
+  text: string;
 }
 
 export interface MoneyBreakdown {

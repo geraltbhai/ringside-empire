@@ -13,6 +13,14 @@ Wrestling Empire is a reference for **feel and style only**. No assets, code or 
 - Wrestling Empire-style readability: slightly heroic proportions, strong silhouettes, bold gear colours,
   high-contrast faces (brows, beards, eyes) that read at match-camera distance.
 - Per-wrestler morphs drive build and face; skin texture + existing gear/tattoo shader on top.
+- Pass 2: V-taper physiques, baked AO and curvature shading, fur-shell beards/stubble/brows, image-based
+  lighting, costume patterns, back lettering, mask styles/patterns, footwear, gloves and sleeves.
+
+## Storylines ✅ (first pass)
+- Rivalry themes (betrayal, chasing the gold, legacy, revenge, …), payoff stipulations, editable sides,
+  custom story beats, delete.
+- Generated promo and confrontation dialogue from theme, stage, alignment, titles and finishers; shown in
+  show results and previewable from the Rivalries screen.
 
 ## Phase 2 — Engine v2: any number of wrestlers, the whole arena ✅ (first pass)
 - Rewrite `live-match.ts` around N fighters (2–30), each with an AI brain and a current target.

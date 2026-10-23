@@ -10,7 +10,7 @@ import { Badge, Button, EmptyState, Field, PageHeader, Panel, Tabs } from "@/com
 import { useAction } from "@/components/WeekControls";
 import type { CameraPreset } from "@/components/match3d/CharacterStage";
 import { faceFor } from "@/engine/appearance";
-import type { Appearance, FaceShape, TattooSpot, Wrestler } from "@/engine/types";
+import { type Appearance, type FaceShape, GEAR_PATTERNS, MASK_PATTERNS, type TattooSpot, type Wrestler } from "@/engine/types";
 import { restoreLook, updateWrestler } from "@/engine/universe";
 import { cn, heightLabel } from "@/lib/cn";
 import { useUniverse } from "@/store/game";
@@ -288,8 +288,30 @@ export default function LookEditorPage() {
                   ]}
                 />
                 <label className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" checked={look.mask} onChange={(e) => set("mask", e.target.checked)} /> Wears a mask (uses gear and trim colours)
+                  <input type="checkbox" checked={look.mask} onChange={(e) => set("mask", e.target.checked)} /> Wears a mask (gear colour, trim colour for the pattern)
                 </label>
+                {look.mask && (
+                  <>
+                    <Choice
+                      label="Mask style"
+                      value={look.maskStyle ?? "luchador"}
+                      onChange={(v) => set("maskStyle", v)}
+                      options={[
+                        { v: "luchador", l: "Luchador" },
+                        { v: "full", l: "Full face" },
+                        { v: "half", l: "Half mask" },
+                        { v: "eyes", l: "Eye mask" },
+                        { v: "skull", l: "Skull" },
+                      ]}
+                    />
+                    <Choice
+                      label="Mask pattern"
+                      value={look.maskPattern ?? "plain"}
+                      onChange={(v) => set("maskPattern", v)}
+                      options={MASK_PATTERNS.map((v) => ({ v, l: v[0].toUpperCase() + v.slice(1) }))}
+                    />
+                  </>
+                )}
                 <Choice
                   label="Face paint"
                   value={look.facePaint ?? "none"}
@@ -326,26 +348,70 @@ export default function LookEditorPage() {
                     { v: "bodysuit", l: "Bodysuit" },
                   ]}
                 />
-                <div className="grid gap-4 sm:grid-cols-3">
+                <Choice label="Pattern" value={look.gearPattern ?? "solid"} onChange={(v) => set("gearPattern", v)} options={GEAR_PATTERNS.map((v) => ({ v, l: v[0].toUpperCase() + v.slice(1) }))} />
+                <div className="grid gap-4 sm:grid-cols-4">
                   <Field label="Gear colour">
                     <input type="color" value={look.primaryColor} onChange={(e) => set("primaryColor", e.target.value)} className="h-10 w-full cursor-pointer rounded-md border border-rope bg-arena" />
                   </Field>
                   <Field label="Trim & pads">
                     <input type="color" value={look.secondaryColor} onChange={(e) => set("secondaryColor", e.target.value)} className="h-10 w-full cursor-pointer rounded-md border border-rope bg-arena" />
                   </Field>
+                  <Field label="Accent">
+                    <input type="color" value={look.accentColor ?? look.secondaryColor} onChange={(e) => set("accentColor", e.target.value)} className="h-10 w-full cursor-pointer rounded-md border border-rope bg-arena" />
+                  </Field>
                   <Field label="Boots">
                     <input type="color" value={look.bootColor} onChange={(e) => set("bootColor", e.target.value)} className="h-10 w-full cursor-pointer rounded-md border border-rope bg-arena" />
                   </Field>
                 </div>
+                <Field label="Lettering" hint="Up to 8 characters across the seat (and down the leg on tights), in the accent colour.">
+                  <input className="h-10 w-full rounded-md border border-rope bg-arena px-3 text-sm uppercase" maxLength={8} value={look.gearText ?? ""} onChange={(e) => set("gearText", e.target.value || undefined)} placeholder="e.g. 3:16, AN, YEET" />
+                </Field>
+                <Choice
+                  label="Footwear"
+                  value={look.bootStyle ?? "boots"}
+                  onChange={(v) => set("bootStyle", v)}
+                  options={[
+                    { v: "boots", l: "Boots" },
+                    { v: "kickpads", l: "Boots + kick pads" },
+                    { v: "sneakers", l: "Sneakers" },
+                    { v: "barefoot", l: "Barefoot" },
+                  ]}
+                />
+                <Choice
+                  label="Arm sleeves"
+                  value={look.armSleeve ?? "none"}
+                  onChange={(v) => set("armSleeve", v)}
+                  options={[
+                    { v: "none", l: "None" },
+                    { v: "left", l: "Left" },
+                    { v: "right", l: "Right" },
+                    { v: "both", l: "Both" },
+                  ]}
+                />
+                {look.gloves && (
+                  <Choice
+                    label="Gloves"
+                    value={look.gloveStyle ?? "fingerless"}
+                    onChange={(v) => set("gloveStyle", v)}
+                    options={[
+                      { v: "fingerless", l: "Fingerless MMA" },
+                      { v: "full", l: "Full gloves" },
+                      { v: "wraps", l: "Hand wraps" },
+                    ]}
+                  />
+                )}
                 <div className="flex flex-wrap gap-4 text-sm">
                   <label className="flex items-center gap-2">
                     <input type="checkbox" checked={look.kneepads} onChange={(e) => set("kneepads", e.target.checked)} /> Kneepads
                   </label>
                   <label className="flex items-center gap-2">
+                    <input type="checkbox" checked={!!look.kneeSleeves} onChange={(e) => set("kneeSleeves", e.target.checked)} /> Knee sleeves
+                  </label>
+                  <label className="flex items-center gap-2">
                     <input type="checkbox" checked={look.wristTape} onChange={(e) => set("wristTape", e.target.checked)} /> Taped wrists
                   </label>
                   <label className="flex items-center gap-2">
-                    <input type="checkbox" checked={!!look.gloves} onChange={(e) => set("gloves", e.target.checked)} /> MMA gloves
+                    <input type="checkbox" checked={!!look.gloves} onChange={(e) => set("gloves", e.target.checked)} /> Gloves
                   </label>
                   <label className="flex items-center gap-2">
                     <input type="checkbox" checked={!!look.elbowPads} onChange={(e) => set("elbowPads", e.target.checked)} /> Elbow pads

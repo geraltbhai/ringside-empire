@@ -47,6 +47,11 @@ export interface HumanBase {
   topoCount: number;
   /** One render vertex per topology vertex (for looking up per-topology data). */
   topoFirst: Uint32Array;
+  /** Topology adjacency in CSR form: neighbours of t are adj[adjStart[t] .. adjStart[t + 1]). */
+  adjStart: Uint32Array;
+  adj: Uint32Array;
+  /** Baked ambient occlusion per topology vertex (1 = open), filled in by the asset loader. */
+  ao: Float32Array | null;
   bones: BoneRest[];
   boneIndex: Record<string, number>;
   morphs: Record<string, Morph>;
@@ -186,7 +191,15 @@ export function parseHumanBase(buf: ArrayBuffer): HumanBase {
     parts[p.name] = { name: p.name, kind: p.kind, positions: f.positions, uvs: f.uvs, index: f.index, topo: f.topo, topoCount: f.topoCount, bind: Uint32Array.from(f.topo, (t) => bind[t]) };
   }
 
-  return { ...body, topoFirst, bones, boneIndex, morphs, parts, textures: header.textures };
+  // unique neighbours, packed
+  const adjStart = new Uint32Array(ntopo + 1);
+  const adjList: number[] = [];
+  for (let t = 0; t < ntopo; t++) {
+    adjStart[t] = adjList.length;
+    for (const nb of new Set(nbrs[t])) adjList.push(nb);
+  }
+  adjStart[ntopo] = adjList.length;
+  return { ...body, topoFirst, adjStart, adj: new Uint32Array(adjList), ao: null, bones, boneIndex, morphs, parts, textures: header.textures };
 }
 
 /**

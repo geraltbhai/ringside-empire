@@ -16,7 +16,9 @@ ring to play matches yourself.
 > (build, face structure, gear volume) and painted in a shader (photographic skin detail, ring gear, boots,
 > pads, gloves, tattoos, masks, face paint). Rebuild the model with
 > `blender -b --python scripts/blender/bake_human.py -- public/models` (needs Blender, MPFB2 and the MakeHuman
-> system assets). Knockdowns and slams use Rapier ragdolls;
+> system assets). Beards, stubble, brows and short hair are layered fur shells; skin uses baked ambient
+> occlusion (`npx tsx scripts/bake-ao.ts`, via three-mesh-bvh) plus curvature shading for muscle definition.
+> Gear supports patterns, lettering, masks (luchador, full, half, skull) and footwear. Knockdowns and slams use Rapier ragdolls;
 > grapples use arm IK. Portraits are rendered from the 3D model. Tweak anyone in the Character Studio.
 
 ---

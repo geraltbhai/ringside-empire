@@ -92,7 +92,10 @@
      "jaw": 0.7,
      "chin": 0.7,
      "length": 0.6
-    }
+    },
+    "gearPattern": "stripes",
+    "accentColor": "#f8fafc",
+    "gearText": "AN"
    },
    "trend": "declining",
    "isCustom": false,
@@ -288,7 +291,10 @@
     "face": {
      "jaw": 0.55,
      "cheeks": 0.7
-    }
+    },
+    "gearPattern": "lightning",
+    "accentColor": "#facc15",
+    "bootStyle": "kickpads"
    },
    "trend": "declining",
    "isCustom": false,
@@ -388,7 +394,9 @@
      "jaw": 0.5,
      "chin": 0.6,
      "length": 0.6
-    }
+    },
+    "gearText": "GTS",
+    "accentColor": "#f8fafc"
    },
    "trend": "declining",
    "isCustom": false,
@@ -483,7 +491,8 @@
      "jaw": 0.75,
      "width": 0.7,
      "brow": 0.6
-    }
+    },
+    "kneeSleeves": true
    },
    "trend": "declining",
    "isCustom": false,
@@ -581,7 +590,9 @@
      "jaw": 0.75,
      "brow": 0.7,
      "length": 0.65
-    }
+    },
+    "gearPattern": "tribal",
+    "accentColor": "#a16207"
    },
    "trend": "declining",
    "isCustom": false,
@@ -681,7 +692,9 @@
      "jaw": 0.55,
      "length": 0.7,
      "cheeks": 0.7
-    }
+    },
+    "gearText": "RKO",
+    "accentColor": "#a1a1aa"
    },
    "trend": "declining",
    "isCustom": false,
@@ -781,7 +794,8 @@
      "jaw": 0.85,
      "width": 0.75,
      "brow": 0.8
-    }
+    },
+    "gloveStyle": "fingerless"
    },
    "trend": "declining",
    "isCustom": false,
@@ -875,7 +889,9 @@
     "face": {
      "jaw": 0.7,
      "chin": 0.65
-    }
+    },
+    "gearText": "YEAH",
+    "accentColor": "#facc15"
    },
    "trend": "declining",
    "isCustom": false,
@@ -971,7 +987,10 @@
      "tribalR",
      "legs"
     ],
-    "elbowPads": true
+    "elbowPads": true,
+    "gearText": "YEET",
+    "accentColor": "#facc15",
+    "armSleeve": "right"
    },
    "trend": "declining",
    "isCustom": false,
@@ -1067,7 +1086,10 @@
      "tribalR",
      "legs"
     ],
-    "elbowPads": true
+    "elbowPads": true,
+    "gearText": "USO",
+    "accentColor": "#f8fafc",
+    "armSleeve": "left"
    },
    "trend": "declining",
    "isCustom": false,
@@ -1265,7 +1287,9 @@
     "face": {
      "jaw": 0.8,
      "width": 0.8
-    }
+    },
+    "gearPattern": "tribal",
+    "accentColor": "#b91c1c"
    },
    "trend": "peak",
    "isCustom": false,
@@ -1547,7 +1571,9 @@
     "face": {
      "jaw": 0.8,
      "brow": 0.7
-    }
+    },
+    "gearText": "BB",
+    "accentColor": "#f8fafc"
    },
    "trend": "peak",
    "isCustom": false,
@@ -1737,7 +1763,9 @@
     "face": {
      "jaw": 0.75,
      "chin": 0.7
-    }
+    },
+    "bootStyle": "sneakers",
+    "gearPattern": "fade"
    },
    "trend": "peak",
    "isCustom": false,
@@ -1832,7 +1860,9 @@
      "neck",
      "upperR"
     ],
-    "gloves": true
+    "gloves": true,
+    "gearText": "DOM",
+    "accentColor": "#f8fafc"
    },
    "trend": "peak",
    "isCustom": false,
@@ -1926,7 +1956,9 @@
     "tattoos": [
      "upperL"
     ],
-    "elbowPads": true
+    "elbowPads": true,
+    "gearPattern": "snake",
+    "accentColor": "#f8fafc"
    },
    "trend": "declining",
    "isCustom": false,
@@ -2208,7 +2240,11 @@
      "sleeveL",
      "sleeveR"
     ],
-    "gloves": true
+    "gloves": true,
+    "maskStyle": "luchador",
+    "maskPattern": "teeth",
+    "gearPattern": "splatter",
+    "accentColor": "#dc2626"
    },
    "trend": "declining",
    "isCustom": false,
@@ -2304,7 +2340,12 @@
      "sleeveR",
      "chest",
      "back"
-    ]
+    ],
+    "maskStyle": "luchador",
+    "maskPattern": "cross",
+    "bootStyle": "kickpads",
+    "gearPattern": "stars",
+    "accentColor": "#facc15"
    },
    "trend": "declining",
    "isCustom": false,
@@ -2394,7 +2435,10 @@
     "legSize": 0.59,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "bootStyle": "kickpads",
+    "gearPattern": "flames",
+    "accentColor": "#facc15"
    },
    "trend": "peak",
    "isCustom": false,
@@ -2773,7 +2817,9 @@
     "face": {
      "cheeks": 0.8,
      "length": 0.6
-    }
+    },
+    "bootStyle": "kickpads",
+    "gearPattern": "snake"
    },
    "trend": "declining",
    "isCustom": false,
@@ -3340,7 +3386,8 @@
     "wristTape": false,
     "tattoos": [
      "upperL"
-    ]
+    ],
+    "bootStyle": "kickpads"
    },
    "trend": "peak",
    "isCustom": false,
@@ -3524,7 +3571,9 @@
     "tattoos": [
      "sleeveL",
      "sleeveR"
-    ]
+    ],
+    "maskStyle": "skull",
+    "maskPattern": "plain"
    },
    "trend": "declining",
    "isCustom": false,
@@ -3614,7 +3663,9 @@
     "legSize": 0.61,
     "bootColor": "#7f1d1d",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "gearPattern": "fade",
+    "accentColor": "#22c55e"
    },
    "trend": "declining",
    "isCustom": false,
@@ -3704,7 +3755,9 @@
     "legSize": 0.46,
     "bootColor": "#7f1d1d",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "gearPattern": "fade",
+    "accentColor": "#22c55e"
    },
    "trend": "declining",
    "isCustom": false,
@@ -4354,7 +4407,9 @@
     "legSize": 0.45,
     "bootColor": "#f5f5f4",
     "kneepads": false,
-    "wristTape": false
+    "wristTape": false,
+    "gearText": "A-TOWN",
+    "accentColor": "#facc15"
    },
    "trend": "peak",
    "isCustom": false,
@@ -4538,7 +4593,9 @@
     "face": {
      "jaw": 0.6,
      "length": 0.65
-    }
+    },
+    "gearPattern": "stars",
+    "accentColor": "#facc15"
    },
    "trend": "peak",
    "isCustom": false,
@@ -4633,7 +4690,9 @@
      "jaw": 0.5,
      "chin": 0.65,
      "nose": 0.65
-    }
+    },
+    "gearText": "MJF",
+    "accentColor": "#f8fafc"
    },
    "trend": "peak",
    "isCustom": false,
@@ -4727,7 +4786,10 @@
     "face": {
      "cheeks": 0.75,
      "length": 0.6
-    }
+    },
+    "bootStyle": "kickpads",
+    "gearPattern": "lightning",
+    "accentColor": "#facc15"
    },
    "trend": "declining",
    "isCustom": false,
@@ -4820,7 +4882,10 @@
     "wristTape": false,
     "tattoos": [
      "upperR"
-    ]
+    ],
+    "bootStyle": "kickpads",
+    "gearPattern": "flames",
+    "accentColor": "#f8fafc"
    },
    "trend": "peak",
    "isCustom": false,
@@ -4916,7 +4981,9 @@
      "sleeveR",
      "neck",
      "chest"
-    ]
+    ],
+    "gearPattern": "splatter",
+    "accentColor": "#facc15"
    },
    "trend": "peak",
    "isCustom": false,
@@ -5114,7 +5181,9 @@
      "neck",
      "legs"
     ],
-    "facePaint": "skull"
+    "facePaint": "skull",
+    "bootStyle": "sneakers",
+    "armSleeve": "both"
    },
    "trend": "peak",
    "isCustom": false,
@@ -5297,7 +5366,8 @@
     "legSize": 0.53,
     "bootColor": "#7f1d1d",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "bootStyle": "kickpads"
    },
    "trend": "rising",
    "isCustom": false,
@@ -5477,7 +5547,9 @@
     "legSize": 0.46,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "gearText": "OKADA",
+    "accentColor": "#facc15"
    },
    "trend": "declining",
    "isCustom": false,
@@ -6683,7 +6755,9 @@
     "wristTape": false,
     "tattoos": [
      "upperL"
-    ]
+    ],
+    "gearPattern": "stars",
+    "accentColor": "#f8fafc"
    },
    "trend": "declining",
    "isCustom": false,
@@ -6776,7 +6850,9 @@
     "wristTape": false,
     "tattoos": [
      "upperR"
-    ]
+    ],
+    "gearPattern": "stars",
+    "accentColor": "#f8fafc"
    },
    "trend": "declining",
    "isCustom": false,
@@ -7149,7 +7225,10 @@
     "legSize": 0.53,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "maskStyle": "luchador",
+    "maskPattern": "stars",
+    "accentColor": "#facc15"
    },
    "trend": "peak",
    "isCustom": false,
@@ -7513,7 +7592,8 @@
     "legSize": 0.61,
     "bootColor": "#f5f5f4",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "bootStyle": "kickpads"
    },
    "trend": "peak",
    "isCustom": false,
@@ -7693,7 +7773,10 @@
     "legSize": 0.49,
     "bootColor": "#7f1d1d",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "maskStyle": "luchador",
+    "maskPattern": "wings",
+    "accentColor": "#facc15"
    },
    "trend": "declining",
    "isCustom": false,
@@ -7783,7 +7866,10 @@
     "legSize": 0.63,
     "bootColor": "#111318",
     "kneepads": false,
-    "wristTape": true
+    "wristTape": true,
+    "maskStyle": "luchador",
+    "maskPattern": "flames",
+    "accentColor": "#dc2626"
    },
    "trend": "peak",
    "isCustom": false,
@@ -8349,7 +8435,8 @@
      "jaw": 0.7,
      "length": 0.8,
      "brow": 0.8
-    }
+    },
+    "gloveStyle": "fingerless"
    },
    "trend": "peak",
    "isCustom": false,
@@ -8446,7 +8533,9 @@
     "face": {
      "jaw": 0.7,
      "brow": 0.75
-    }
+    },
+    "gearText": "3:16",
+    "accentColor": "#f8fafc"
    },
    "trend": "peak",
    "isCustom": false,
@@ -8544,7 +8633,9 @@
      "jaw": 0.8,
      "brow": 0.85,
      "width": 0.65
-    }
+    },
+    "gearText": "ROCK",
+    "accentColor": "#f8fafc"
    },
    "trend": "peak",
    "isCustom": false,
@@ -8639,7 +8730,9 @@
      "jaw": 0.75,
      "nose": 0.8,
      "length": 0.75
-    }
+    },
+    "gearText": "DX",
+    "accentColor": "#a3e635"
    },
    "trend": "peak",
    "isCustom": false,
@@ -8729,7 +8822,9 @@
     "legSize": 0.5,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "gearPattern": "flames",
+    "accentColor": "#facc15"
    },
    "trend": "peak",
    "isCustom": false,
@@ -8819,7 +8914,9 @@
     "legSize": 0.49,
     "bootColor": "#7f1d1d",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "maskStyle": "full",
+    "maskPattern": "teeth"
    },
    "trend": "peak",
    "isCustom": false,
@@ -8909,7 +9006,11 @@
     "legSize": 0.52,
     "bootColor": "#111318",
     "kneepads": false,
-    "wristTape": true
+    "wristTape": true,
+    "maskStyle": "full",
+    "maskPattern": "stripes",
+    "gloves": true,
+    "gloveStyle": "full"
    },
    "trend": "peak",
    "isCustom": false,
@@ -9007,7 +9108,8 @@
     "face": {
      "jaw": 0.85,
      "width": 0.75
-    }
+    },
+    "gloveStyle": "fingerless"
    },
    "trend": "peak",
    "isCustom": false,
@@ -9098,7 +9200,9 @@
     "bootColor": "#f5f5f4",
     "kneepads": false,
     "wristTape": true,
-    "facePaint": "crow"
+    "facePaint": "crow",
+    "gearPattern": "flames",
+    "accentColor": "#e5e7eb"
    },
    "trend": "declining",
    "isCustom": false,
@@ -9368,7 +9472,9 @@
     "legSize": 0.46,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "gearPattern": "fade",
+    "accentColor": "#f8fafc"
    },
    "trend": "peak",
    "isCustom": false,
@@ -9458,7 +9564,10 @@
     "legSize": 0.58,
     "bootColor": "#7f1d1d",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "bootStyle": "sneakers",
+    "gearText": "HLR",
+    "accentColor": "#f8fafc"
    },
    "trend": "peak",
    "isCustom": false,
@@ -9548,7 +9657,9 @@
     "legSize": 0.43,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "gearPattern": "stars",
+    "accentColor": "#f8fafc"
    },
    "trend": "peak",
    "isCustom": false,
@@ -9642,7 +9753,9 @@
     "tattoos": [
      "back",
      "torso"
-    ]
+    ],
+    "gearPattern": "flames",
+    "accentColor": "#dc2626"
    },
    "trend": "declining",
    "isCustom": false,
@@ -9833,7 +9946,11 @@
      "sleeveL",
      "sleeveR",
      "chest"
-    ]
+    ],
+    "maskStyle": "luchador",
+    "maskPattern": "wings",
+    "bootStyle": "kickpads",
+    "accentColor": "#1d4ed8"
    },
    "trend": "peak",
    "isCustom": false,
@@ -10016,7 +10133,10 @@
     "legSize": 0.55,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "bootStyle": "kickpads",
+    "gearPattern": "flames",
+    "accentColor": "#facc15"
    },
    "trend": "peak",
    "isCustom": false,
@@ -10106,7 +10226,9 @@
     "legSize": 0.47,
     "bootColor": "#7f1d1d",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "gearText": "BOOKER",
+    "accentColor": "#111318"
    },
    "trend": "declining",
    "isCustom": false,
@@ -10202,7 +10324,10 @@
      "sleeveR",
      "chest"
     ],
-    "facePaint": "demon"
+    "facePaint": "demon",
+    "armSleeve": "both",
+    "gearPattern": "splatter",
+    "accentColor": "#22c55e"
    },
    "trend": "peak",
    "isCustom": false,
@@ -10382,7 +10507,8 @@
     "legSize": 0.59,
     "bootColor": "#111318",
     "kneepads": true,
-    "wristTape": false
+    "wristTape": false,
+    "bootStyle": "kickpads"
    },
    "trend": "peak",
    "isCustom": false,
@@ -10478,7 +10604,9 @@
     ],
     "face": {
      "jaw": 0.6
-    }
+    },
+    "gearPattern": "stars",
+    "accentColor": "#f8fafc"
    },
    "trend": "declining",
    "isCustom": false,
@@ -10568,7 +10696,8 @@
     "legSize": 0.46,
     "bootColor": "#f5f5f4",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "bootStyle": "sneakers"
    },
    "trend": "declining",
    "isCustom": false,
@@ -10664,7 +10793,8 @@
      "sleeveR",
      "chest"
     ],
-    "gloves": true
+    "gloves": true,
+    "gloveStyle": "fingerless"
    },
    "trend": "declining",
    "isCustom": false,
@@ -10938,7 +11068,9 @@
     "face": {
      "nose": 0.75,
      "jaw": 0.7
-    }
+    },
+    "gearText": "HULKSTER",
+    "accentColor": "#facc15"
    },
    "trend": "peak",
    "isCustom": false,
@@ -11122,7 +11254,9 @@
     "legSize": 0.48,
     "bootColor": "#7f1d1d",
     "kneepads": true,
-    "wristTape": true
+    "wristTape": true,
+    "gearPattern": "stars",
+    "accentColor": "#facc15"
    },
    "trend": "peak",
    "isCustom": false,
@@ -11213,7 +11347,10 @@
     "bootColor": "#111318",
     "kneepads": false,
     "wristTape": true,
-    "facePaint": "warrior"
+    "facePaint": "warrior",
+    "gearPattern": "lightning",
+    "accentColor": "#facc15",
+    "armSleeve": "both"
    },
    "trend": "peak",
    "isCustom": false,
@@ -11853,7 +11990,9 @@
     "legSize": 0.55,
     "bootColor": "#7f1d1d",
     "kneepads": false,
-    "wristTape": true
+    "wristTape": true,
+    "gearPattern": "fade",
+    "accentColor": "#f8fafc"
    },
    "trend": "declining",
    "isCustom": false,

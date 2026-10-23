@@ -3,7 +3,8 @@
  * a result; applying the consequences is done by universe.ts.
  */
 import { entertainmentRating, formRating, inRingRating, overall } from "./rating";
-import { clamp, type Rng } from "./rng";
+import { clamp, createRng, type Rng } from "./rng";
+import { generateDialogue } from "./dialogue";
 import {
   averageOverall,
   lastMeeting,
@@ -416,6 +417,7 @@ function simulateTalkSegment({ universe, rng }: SimulationContext, seg: Segment)
     titleChange: null,
     qualityBreakdown: breakdown,
     injuries: [],
+    dialogue: generateDialogue(universe, { kind: seg.kind === "match" ? "promo" : seg.kind, sideA: seg.sideA, sideB: seg.sideB, rivalry }, createRng(universe.seed, "dialogue", seg.id)),
   };
 }
 

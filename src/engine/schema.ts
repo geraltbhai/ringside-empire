@@ -5,7 +5,7 @@
 import { z } from "zod";
 import { DEFAULT_SETTINGS, ROSTER_WRESTLERS, SCHEMA_VERSION } from "../data/seed";
 import { defaultBuild } from "./appearance";
-import { ATTRIBUTE_KEYS, TATTOO_SPOTS, type Universe } from "./types";
+import { ATTRIBUTE_KEYS, GEAR_PATTERNS, MASK_PATTERNS, MASK_STYLES, TATTOO_SPOTS, type Universe } from "./types";
 
 const score = z.number().min(0).max(100);
 const attributes = z.object(Object.fromEntries(ATTRIBUTE_KEYS.map((k) => [k, z.number().min(1).max(100)])) as Record<(typeof ATTRIBUTE_KEYS)[number], z.ZodNumber>);
@@ -71,6 +71,15 @@ export const wrestlerSchema = z.object({
     gloves: z.boolean().optional(),
     elbowPads: z.boolean().optional(),
     facePaint: z.enum(["none", "warrior", "crow", "skull", "demon"]).optional(),
+    accentColor: z.string().optional(),
+    gearPattern: z.enum(GEAR_PATTERNS).optional(),
+    gearText: z.string().max(8).optional(),
+    maskStyle: z.enum(MASK_STYLES).optional(),
+    maskPattern: z.enum(MASK_PATTERNS).optional(),
+    bootStyle: z.enum(["boots", "kickpads", "sneakers", "barefoot"]).optional(),
+    gloveStyle: z.enum(["fingerless", "full", "wraps"]).optional(),
+    armSleeve: z.enum(["none", "left", "right", "both"]).optional(),
+    kneeSleeves: z.boolean().optional(),
   }),
   trend: z.enum(["rising", "peak", "declining"]),
   isCustom: z.boolean(),

@@ -1,5 +1,6 @@
 "use client";
 
+import { DialogueView } from "@/components/DialogueView";
 import { Gamepad2, HeartPulse } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -116,6 +117,14 @@ export default function ShowResultsPage() {
                     {res.titleChange && <Badge tone="gold">Title change</Badge>}
                   </div>
                   <p className="text-sm leading-relaxed">{res.summary}</p>
+                  {res.dialogue && res.dialogue.length > 0 && (
+                    <details className="text-sm">
+                      <summary className="cursor-pointer text-muted">What was said</summary>
+                      <div className="mt-2">
+                        <DialogueView u={u} lines={res.dialogue} />
+                      </div>
+                    </details>
+                  )}
                   {res.injuries.map((inj) => (
                     <p key={inj.wrestlerId} className="flex items-center gap-2 text-sm text-bad">
                       <HeartPulse size={14} /> {u.wrestlers[inj.wrestlerId]?.ringName}: {inj.description} (~{inj.weeks} wk)

@@ -6,6 +6,7 @@ import type React from "react";
 import { useEffect, useRef } from "react";
 
 import type { Wrestler } from "@/engine/types";
+import { ArenaEnvironment } from "./Environment";
 import { SafeCanvas } from "./SafeCanvas";
 import { type RigDriver, WrestlerModel } from "./WrestlerModel";
 
@@ -64,7 +65,8 @@ export default function CharacterStage({ wrestler, anim, turntable, preset, acce
     >
       <color attach="background" args={["#0b0d14"]} />
       <fog attach="fog" args={["#0b0d14", 6, 14]} />
-      <ambientLight intensity={0.35} />
+      <ambientLight intensity={0.2} />
+      <ArenaEnvironment intensity={0.45} />
       <hemisphereLight args={["#c7d2fe", "#1a0f12", 0.45]} />
       {/* key */}
       <directionalLight position={[2.5, 4, 3]} intensity={2.6} castShadow shadow-mapSize={[1024, 1024]} color="#fff4e6" />

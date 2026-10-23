@@ -1,16 +1,30 @@
 "use client";
 
-import { Lightbulb, Pause, Play, Plus, Swords, Flag } from "lucide-react";
+import { Flag, Lightbulb, MessageSquareQuote, Pause, Play, Plus, RefreshCw, Swords, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { DialogueView } from "@/components/DialogueView";
 import { BrandBadge } from "@/components/game";
 import { Portrait } from "@/components/Portrait";
 import { Badge, Button, Field, inputClass, Meter, Modal, PageHeader, Panel, Tabs } from "@/components/ui/primitives";
 import { useAction } from "@/components/WeekControls";
 import { newSegment } from "@/engine/booking";
+import { generateDialogue } from "@/engine/dialogue";
+import { createRng } from "@/engine/rng";
+import { STIPULATION_LABELS } from "@/engine/simulation";
 import { sideName } from "@/engine/queries";
 import { overall } from "@/engine/rating";
-import { createRivalry, storySuggestions, type StorySuggestion } from "@/engine/storyline";
-import { RIVALRY_STAGES, type Rivalry, type RivalryPayoff, type RivalryStage, type Universe } from "@/engine/types";
+import { createRivalry, rivalryTheme, storySuggestions, type StorySuggestion } from "@/engine/storyline";
+import {
+  RIVALRY_STAGES,
+  RIVALRY_THEME_LABELS,
+  RIVALRY_THEMES,
+  type Rivalry,
+  type RivalryPayoff,
+  type RivalryStage,
+  type RivalryTheme,
+  type Stipulation,
+  type Universe,
+} from "@/engine/types";
 import { disbandTeam } from "@/engine/universe";
 import { cn } from "@/lib/cn";
 import { useUniverse } from "@/store/game";
@@ -22,10 +36,125 @@ const PAYOFF_LABEL: Record<RivalryPayoff, string> = {
   "tag-showdown": "Tag-team showdown",
 };
 const selectClass = "h-10 w-full rounded-md border border-rope bg-arena px-2 text-sm";
+const STIPS = Object.keys(STIPULATION_LABELS) as Stipulation[];
+
+function rosterPool(u: Universe) {
+  return Object.values(u.wrestlers)
+    .filter((w) => w.brand === "mayhem" || w.brand === "fury")
+    .sort((x, y) => overall(y, u.settings) - overall(x, u.settings));
+}
+
+/** One or two wrestlers per side (singles or tag). */
+function SidePicker({ u, label, value, onChange, taken }: { u: Universe; label: string; value: string[]; onChange: (v: string[]) => void; taken: string[] }) {
+  const pool = useMemo(() => rosterPool(u), [u]);
+  const slots = [value[0] ?? "", value[1] ?? ""];
+  return (
+    <div className="space-y-2">
+      <div className="text-sm text-muted">{label}</div>
+      {slots.map((v, i) => (
+        <select
+          key={i}
+          className={selectClass}
+          value={v}
+          aria-label={`${label} ${i === 0 ? "wrestler" : "partner"}`}
+          onChange={(e) => onChange(slots.map((x, j) => (j === i ? e.target.value : x)).filter(Boolean))}
+        >
+          <option value="">{i === 0 ? "Wrestler" : "Partner (optional)"}</option>
+          {pool.map((w) => (
+            <option key={w.id} value={w.id} disabled={taken.includes(w.id) && v !== w.id}>
+              {w.ringName} · {u.brands[w.brand].name}
+            </option>
+          ))}
+        </select>
+      ))}
+    </div>
+  );
+}
+
+function StoryFields({
+  u,
+  theme,
+  setTheme,
+  payoff,
+  setPayoff,
+  stipulation,
+  setStipulation,
+  titleId,
+  setTitleId,
+}: {
+  u: Universe;
+  theme: RivalryTheme;
+  setTheme: (v: RivalryTheme) => void;
+  payoff: RivalryPayoff;
+  setPayoff: (v: RivalryPayoff) => void;
+  stipulation: Stipulation;
+  setStipulation: (v: Stipulation) => void;
+  titleId: string;
+  setTitleId: (v: string) => void;
+}) {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      <Field label="Story theme">
+        <select className={selectClass} value={theme} onChange={(e) => setTheme(e.target.value as RivalryTheme)}>
+          {RIVALRY_THEMES.map((t) => (
+            <option key={t} value={t}>
+              {RIVALRY_THEME_LABELS[t]}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <Field label="Desired payoff">
+        <select className={selectClass} value={payoff} onChange={(e) => setPayoff(e.target.value as RivalryPayoff)}>
+          {Object.entries(PAYOFF_LABEL).map(([k, v]) => (
+            <option key={k} value={k}>
+              {v}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <Field label="Payoff stipulation">
+        <select className={selectClass} value={stipulation} onChange={(e) => setStipulation(e.target.value as Stipulation)}>
+          {STIPS.map((k) => (
+            <option key={k} value={k}>
+              {STIPULATION_LABELS[k]}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <Field label="Championship implications">
+        <select className={selectClass} value={titleId} onChange={(e) => setTitleId(e.target.value)}>
+          <option value="">None</option>
+          {Object.values(u.championships).map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name}
+            </option>
+          ))}
+        </select>
+      </Field>
+    </div>
+  );
+}
+
+/** Previews the promo the next confrontation would produce. */
+function PromoPreview({ u, r }: { u: Universe; r: Rivalry }) {
+  const [take, setTake] = useState(0);
+  const lines = useMemo(() => generateDialogue(u, { kind: "rivalry", sideA: r.sideA, sideB: r.sideB, rivalry: r }, createRng(u.seed, "preview", r.id, take)), [u, r, take]);
+  return (
+    <div className="space-y-3">
+      <DialogueView u={u} lines={lines} />
+      <div className="flex justify-end">
+        <Button size="sm" variant="ghost" onClick={() => setTake((t) => t + 1)}>
+          <RefreshCw size={14} /> Another take
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 
 function applySuggestion(d: Universe, s: StorySuggestion) {
   const a = s.action;
-  if (a.type === "create-rivalry") createRivalry(d, { sideA: a.sideA, sideB: a.sideB, payoff: a.payoff, titleId: a.titleId, origin: a.origin, intensity: 40 });
+  if (a.type === "create-rivalry") createRivalry(d, { sideA: a.sideA, sideB: a.sideB, payoff: a.payoff, titleId: a.titleId, origin: a.origin, intensity: 40, theme: a.theme });
   if (a.type === "turn") {
     const w = d.wrestlers[a.wrestlerId];
     w.alignment = a.to;
@@ -38,7 +167,7 @@ function applySuggestion(d: Universe, s: StorySuggestion) {
     const name = team.name;
     disbandTeam(d, a.teamId);
     d.wrestlers[x].alignment = "heel";
-    createRivalry(d, { sideA: [y], sideB: [x], payoff: "grudge-match", titleId: null, origin: `${d.wrestlers[x].ringName} betrayed ${d.wrestlers[y].ringName}, ending ${name}.`, intensity: 60 });
+    createRivalry(d, { sideA: [y], sideB: [x], payoff: "grudge-match", titleId: null, origin: `${d.wrestlers[x].ringName} betrayed ${d.wrestlers[y].ringName}, ending ${name}.`, intensity: 60, theme: "betrayal" });
     d.news.push({ week: d.week, text: `${name} is no more after a shocking betrayal.`, tone: "neutral" });
   }
 }
@@ -46,13 +175,27 @@ function applySuggestion(d: Universe, s: StorySuggestion) {
 function RivalryCard({ u, r }: { u: Universe; r: Rivalry }) {
   const run = useAction();
   const [editing, setEditing] = useState(false);
+  const [promo, setPromo] = useState(false);
   const nextShow = u.shows.filter((s) => s.status === "planned" && (s.brand === r.brand || s.brand === "joint")).sort((a, b) => a.week - b.week || a.dayOffset - b.dayOffset)[0];
   const title = r.titleId ? u.championships[r.titleId] : null;
   const bookIt = (kind: "match" | "rivalry") =>
     run((d) => {
       const show = d.shows.find((s) => s.id === nextShow!.id)!;
       const tag = r.sideA.length === 2 && r.sideB.length === 2;
-      show.segments.push(newSegment(d, kind, { label: kind === "match" ? "Rivalry match" : "Rivalry segment", matchType: tag ? "tag" : "singles", sideA: [...r.sideA], sideB: [...r.sideB], rivalryId: r.id, durationMin: kind === "match" ? 14 : 6 }));
+      // the blow-off match carries the chosen stipulation and title
+      const payoff = kind === "match" && r.stage >= 3;
+      show.segments.push(
+        newSegment(d, kind, {
+          label: kind === "match" ? (payoff ? "Rivalry blow-off" : "Rivalry match") : "Rivalry segment",
+          matchType: tag ? "tag" : "singles",
+          sideA: [...r.sideA],
+          sideB: [...r.sideB],
+          rivalryId: r.id,
+          durationMin: kind === "match" ? (payoff ? 20 : 14) : 6,
+          stipulation: payoff && r.stipulation ? r.stipulation : "standard",
+          titleId: payoff && r.payoff === "title-match" && r.titleId && d.championships[r.titleId]?.holderIds.some((h) => [...r.sideA, ...r.sideB].includes(h)) ? r.titleId : null,
+        }),
+      );
     }, `Added to ${nextShow!.name} (week ${nextShow!.week + 1})`);
 
   return (
@@ -69,7 +212,9 @@ function RivalryCard({ u, r }: { u: Universe; r: Rivalry }) {
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
             <BrandBadge universe={u} brand={r.brand} />
+            <Badge>{RIVALRY_THEME_LABELS[rivalryTheme(r)]}</Badge>
             <Badge>{PAYOFF_LABEL[r.payoff]}</Badge>
+            {r.stipulation && r.stipulation !== "standard" && <Badge tone="bad">{STIPULATION_LABELS[r.stipulation]}</Badge>}
             {title && <Badge tone="gold">{title.shortName}</Badge>}
             {r.status !== "active" && <Badge tone={r.status === "paused" ? "neutral" : "good"}>{r.status}</Badge>}
             <span className="text-muted">
@@ -147,6 +292,11 @@ function RivalryCard({ u, r }: { u: Universe; r: Rivalry }) {
             <Flag size={14} /> End
           </Button>
         )}
+        {r.status !== "resolved" && (
+          <Button size="sm" variant="ghost" onClick={() => setPromo(true)}>
+            <MessageSquareQuote size={14} /> Promo preview
+          </Button>
+        )}
         <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>
           Edit
         </Button>
@@ -154,21 +304,40 @@ function RivalryCard({ u, r }: { u: Universe; r: Rivalry }) {
       <Modal open={editing} onClose={() => setEditing(false)} title="Edit rivalry">
         <EditRivalry u={u} r={r} onDone={() => setEditing(false)} />
       </Modal>
+      <Modal open={promo} onClose={() => setPromo(false)} title={`${sideName(u, r.sideA)} vs ${sideName(u, r.sideB)}`}>
+        {promo && <PromoPreview u={u} r={r} />}
+      </Modal>
     </div>
   );
 }
 
 function EditRivalry({ u, r, onDone }: { u: Universe; r: Rivalry; onDone: () => void }) {
   const run = useAction();
+  const [sideA, setSideA] = useState(r.sideA);
+  const [sideB, setSideB] = useState(r.sideB);
   const [intensity, setIntensity] = useState(Math.round(r.intensity));
+  const [fanInterest, setFanInterest] = useState(Math.round(r.fanInterest));
   const [stage, setStage] = useState<RivalryStage>(r.stage);
+  const [theme, setTheme] = useState<RivalryTheme>(rivalryTheme(r));
   const [payoff, setPayoff] = useState(r.payoff);
+  const [stipulation, setStipulation] = useState<Stipulation>(r.stipulation ?? "standard");
   const [titleId, setTitleId] = useState(r.titleId ?? "");
+  const [beat, setBeat] = useState("");
+  const valid = sideA.length > 0 && sideB.length > 0;
   return (
     <div className="space-y-3">
-      <Field label={`Intensity (${intensity})`}>
-        <input type="range" min={0} max={100} value={intensity} onChange={(e) => setIntensity(Number(e.target.value))} className="w-full" />
-      </Field>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <SidePicker u={u} label="Side A" value={sideA} onChange={setSideA} taken={[...sideA, ...sideB]} />
+        <SidePicker u={u} label="Side B" value={sideB} onChange={setSideB} taken={[...sideA, ...sideB]} />
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field label={`Intensity (${intensity})`}>
+          <input type="range" min={0} max={100} value={intensity} onChange={(e) => setIntensity(Number(e.target.value))} className="w-full" />
+        </Field>
+        <Field label={`Fan interest (${fanInterest})`}>
+          <input type="range" min={0} max={100} value={fanInterest} onChange={(e) => setFanInterest(Number(e.target.value))} className="w-full" />
+        </Field>
+      </div>
       <Field label="Stage">
         <select className={selectClass} value={stage} onChange={(e) => setStage(Number(e.target.value) as RivalryStage)}>
           {RIVALRY_STAGES.map((s, i) => (
@@ -178,30 +347,36 @@ function EditRivalry({ u, r, onDone }: { u: Universe; r: Rivalry; onDone: () => 
           ))}
         </select>
       </Field>
-      <Field label="Desired payoff">
-        <select className={selectClass} value={payoff} onChange={(e) => setPayoff(e.target.value as RivalryPayoff)}>
-          {Object.entries(PAYOFF_LABEL).map(([k, v]) => (
-            <option key={k} value={k}>
-              {v}
-            </option>
-          ))}
-        </select>
+      <StoryFields u={u} theme={theme} setTheme={setTheme} payoff={payoff} setPayoff={setPayoff} stipulation={stipulation} setStipulation={setStipulation} titleId={titleId} setTitleId={setTitleId} />
+      <Field label="Add a story beat (optional)">
+        <input className={inputClass} value={beat} onChange={(e) => setBeat(e.target.value)} placeholder="e.g. Attacked backstage before the main event" maxLength={160} />
       </Field>
-      <Field label="Championship implications">
-        <select className={selectClass} value={titleId} onChange={(e) => setTitleId(e.target.value)}>
-          <option value="">None</option>
-          {Object.values(u.championships).map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-            </option>
-          ))}
-        </select>
-      </Field>
-      <div className="flex justify-end">
+      <div className="flex flex-wrap justify-between gap-2">
+        <Button
+          variant="ghost"
+          onClick={() => {
+            if (!window.confirm("Delete this rivalry and its history?")) return;
+            run((d) => {
+              delete d.rivalries[r.id];
+              for (const show of d.shows) for (const seg of show.segments) if (seg.rivalryId === r.id) seg.rivalryId = null;
+            }, "Rivalry deleted");
+            onDone();
+          }}
+        >
+          <Trash2 size={14} /> Delete
+        </Button>
         <Button
           variant="gold"
+          disabled={!valid}
           onClick={() => {
-            run((d) => Object.assign(d.rivalries[r.id], { intensity, stage, payoff, titleId: titleId || null, status: stage === 4 ? "resolved" : d.rivalries[r.id].status }), "Rivalry updated");
+            run((d) => {
+              const x = d.rivalries[r.id];
+              Object.assign(x, { sideA, sideB, intensity, fanInterest, stage, theme, payoff, stipulation, titleId: titleId || null, status: stage === 4 ? "resolved" : x.status });
+              if (beat.trim()) {
+                x.events.push({ week: d.week, text: beat.trim() });
+                x.lastActiveWeek = d.week;
+              }
+            }, "Rivalry updated");
             onDone();
           }}
         >
@@ -214,57 +389,24 @@ function EditRivalry({ u, r, onDone }: { u: Universe; r: Rivalry; onDone: () => 
 
 function CreateRivalry({ u, onDone }: { u: Universe; onDone: () => void }) {
   const run = useAction();
-  const [a, setA] = useState(["", ""]);
-  const [b, setB] = useState(["", ""]);
+  const [sideA, setSideA] = useState<string[]>([]);
+  const [sideB, setSideB] = useState<string[]>([]);
+  const [theme, setTheme] = useState<RivalryTheme>("personal");
   const [payoff, setPayoff] = useState<RivalryPayoff>("grudge-match");
+  const [stipulation, setStipulation] = useState<Stipulation>("standard");
   const [titleId, setTitleId] = useState("");
+  const [intensity, setIntensity] = useState(35);
   const [origin, setOrigin] = useState("");
-  const pool = useMemo(() => Object.values(u.wrestlers).filter((w) => w.brand === "mayhem" || w.brand === "fury").sort((x, y) => overall(y, u.settings) - overall(x, u.settings)), [u]);
-  const sideA = a.filter(Boolean);
-  const sideB = b.filter(Boolean);
-  const pick = (vals: string[], set: (v: string[]) => void, i: number, label: string) => (
-    <select className={selectClass} value={vals[i]} onChange={(e) => set(vals.map((v, j) => (j === i ? e.target.value : v)))} aria-label={label}>
-      <option value="">{label}</option>
-      {pool.map((w) => (
-        <option key={w.id} value={w.id} disabled={[...sideA, ...sideB].includes(w.id) && vals[i] !== w.id}>
-          {w.ringName} · {u.brands[w.brand].name}
-        </option>
-      ))}
-    </select>
-  );
   const valid = sideA.length > 0 && sideB.length > 0 && sideA.length === sideB.length;
   return (
     <div className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-2">
-          <div className="text-sm text-muted">Side A</div>
-          {pick(a, setA, 0, "Wrestler")}
-          {pick(a, setA, 1, "Partner (optional)")}
-        </div>
-        <div className="space-y-2">
-          <div className="text-sm text-muted">Side B</div>
-          {pick(b, setB, 0, "Wrestler")}
-          {pick(b, setB, 1, "Partner (optional)")}
-        </div>
+        <SidePicker u={u} label="Side A" value={sideA} onChange={setSideA} taken={[...sideA, ...sideB]} />
+        <SidePicker u={u} label="Side B" value={sideB} onChange={setSideB} taken={[...sideA, ...sideB]} />
       </div>
-      <Field label="Desired payoff">
-        <select className={selectClass} value={payoff} onChange={(e) => setPayoff(e.target.value as RivalryPayoff)}>
-          {Object.entries(PAYOFF_LABEL).map(([k, v]) => (
-            <option key={k} value={k}>
-              {v}
-            </option>
-          ))}
-        </select>
-      </Field>
-      <Field label="Championship implications">
-        <select className={selectClass} value={titleId} onChange={(e) => setTitleId(e.target.value)}>
-          <option value="">None</option>
-          {Object.values(u.championships).map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-            </option>
-          ))}
-        </select>
+      <StoryFields u={u} theme={theme} setTheme={setTheme} payoff={payoff} setPayoff={setPayoff} stipulation={stipulation} setStipulation={setStipulation} titleId={titleId} setTitleId={setTitleId} />
+      <Field label={`Starting intensity (${intensity})`}>
+        <input type="range" min={10} max={90} value={intensity} onChange={(e) => setIntensity(Number(e.target.value))} className="w-full" />
       </Field>
       <Field label="How it started">
         <input className={inputClass} value={origin} onChange={(e) => setOrigin(e.target.value)} placeholder="e.g. A sneak attack after the main event" maxLength={140} />
@@ -275,7 +417,20 @@ function CreateRivalry({ u, onDone }: { u: Universe; onDone: () => void }) {
           variant="gold"
           disabled={!valid}
           onClick={() => {
-            run((d) => createRivalry(d, { sideA, sideB, payoff, titleId: titleId || null, origin: origin.trim() || `${sideName(d, sideA)} and ${sideName(d, sideB)} have unfinished business.`, intensity: 35 }), "Rivalry started");
+            run(
+              (d) =>
+                createRivalry(d, {
+                  sideA,
+                  sideB,
+                  payoff,
+                  titleId: titleId || null,
+                  origin: origin.trim() || `${sideName(d, sideA)} and ${sideName(d, sideB)} have unfinished business.`,
+                  intensity,
+                  theme,
+                  stipulation,
+                }),
+              "Rivalry started",
+            );
             onDone();
           }}
         >

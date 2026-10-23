@@ -128,50 +128,52 @@ export function morphWeights(a: Appearance, face: FaceShape, id: string, age = 3
   const h = hashString(`${id}:race`);
   const r = [((h >>> 0) % 1000) / 1000, ((h >>> 10) % 1000) / 1000, ((h >>> 20) % 1000) / 1000];
   const rs = r[0] + r[1] + r[2] || 1;
-  w.race_african = (r[0] / rs) * 0.9;
-  w.race_asian = (r[1] / rs) * 0.9;
-  w.race_caucasian = (r[2] / rs) * 0.9;
+  w.race_african = (r[0] / rs) * 0.65;
+  w.race_asian = (r[1] / rs) * 0.65;
+  w.race_caucasian = (r[2] / rs) * 0.65;
   // body details
   bi("pecs", m * 1.3 - 0.1);
-  bi("lats", m * 1.1 + (a.shoulderWidth - 0.5));
-  bi("vshape", clamp(m * 0.8 + (a.shoulderWidth - 0.5) * 1.6 - f * 0.6, -1, 1.4));
-  bi("shoulders", (a.shoulderWidth - 0.5) * 1.6 + b * 0.4);
-  bi("chest", m * 0.5 + b * 0.5 + f * 0.3 - 0.2);
-  bi("waist", f * 1.4 + b * 0.3 - 0.45);
+  bi("lats", m * 1.3 + (a.shoulderWidth - 0.5));
+  bi("vshape", clamp(m * 1.2 + (a.shoulderWidth - 0.5) * 1.6 - f * 0.9, -1, 1.6));
+  // wrestlers carry their mass up top: broad shoulders, big chest, narrower hips
+  bi("shoulders", 0.4 + (a.shoulderWidth - 0.5) * 1.4 + b * 0.3 + m * 0.3);
+  bi("chest", m * 0.7 + b * 0.4 + f * 0.3 - 0.2);
+  bi("waist", f * 1.7 + b * 0.3 - 0.75);
   bi("belly", f > 0.3 ? (f - 0.3) * 2 : 0);
   bi("abs", def * 1.2 - 0.2);
-  bi("glutes", m * 0.6 + f * 0.4 - 0.2);
+  bi("glutes", m * 0.35 + f * 0.4 - 0.25);
   bi("biceps", m * armK * 1.4 - 0.2);
   bi("delts", m * 1.4 + b * 0.2 - 0.2);
   bi("forearms", m * armK * 1.1 - 0.1);
   bi("armFat", f * 0.9 - 0.15);
-  bi("thighs", m * legK * 1.2 - 0.1);
-  bi("thighFat", f * 0.9 - 0.15);
-  bi("calves", m * legK - 0.1);
-  bi("neck", m * 1.2 + b * 0.6 - 0.2);
+  bi("thighs", m * legK * 0.75 - 0.1);
+  bi("thighFat", f * 0.8 - 0.25);
+  bi("calves", m * legK * 0.7);
+  bi("neck", m * 1.1 + b * 0.5 - 0.1);
   if (f > 0.4) w.neckDouble = (f - 0.4) * 1.6;
   // face: sliders first, then stable per-wrestler variety
   const fc = (x: number) => (x - 0.5) * 2;
   const hf = hashString(`${id}:features`);
   const rf = (shift: number) => (((hf >>> shift) % 1000) / 1000 - 0.5) * 2; // −1..1
-  bi("jaw", fc(face.jaw) * 1.2 + b * 0.4);
-  bi("jawBones", fc(face.jaw) * 0.8 + 0.2);
-  bi("chin", fc(face.chin) * 1.1);
+  // a lean, angular, adult male face by default: defined jaw angle, strong chin, high cheekbones
+  bi("jaw", fc(face.jaw) * 0.9 + b * 0.25);
+  bi("jawBones", fc(face.jaw) * 0.6 + 0.55);
+  bi("chin", fc(face.chin) * 1.0 + 0.3);
   bi("chinHeight", rf(1) * 0.6);
-  bi("browDepth", fc(face.brow) * 1.0 + 0.3);
+  bi("browDepth", fc(face.brow) * 0.8 + 0.55);
   bi("browAngle", rf(3) * 0.6 - 0.2);
   bi("noseSize", fc(face.nose) * 0.9);
   bi("noseHump", rf(5) * 0.8);
   bi("noseFlare", rf(7) * 0.7);
   bi("noseTip", rf(9) * 0.6);
-  bi("cheekBones", fc(face.cheeks) * 1.0);
-  bi("cheekVolume", f * 0.8 - 0.3);
-  bi("headWidth", fc(face.width) * 0.8);
-  bi("headLength", fc(face.length) * 0.8);
+  bi("cheekBones", fc(face.cheeks) * 0.9 + 0.3);
+  bi("cheekVolume", f * 1.1 - 0.6);
+  bi("headWidth", fc(face.width) * 0.55 - 0.35);
+  bi("headLength", fc(face.length) * 0.7 + 0.2);
   bi("headDepth", rf(11) * 0.4);
-  bi("headFat", f * 0.9 - 0.3);
-  bi("eyeSize", rf(13) * 0.5 - 0.15);
-  bi("eyeOpen", rf(15) * 0.5 - 0.25);
+  bi("headFat", f * 1.3 - 0.6);
+  bi("eyeSize", rf(13) * 0.4 - 0.05);
+  bi("eyeOpen", rf(15) * 0.4 - 0.2);
   bi("eyeBags", (age - 32) / 30);
   bi("mouthWidth", rf(17) * 0.6);
   bi("lips", rf(19) * 0.7);
@@ -179,9 +181,9 @@ export function morphWeights(a: Appearance, face: FaceShape, id: string, age = 3
   bi("temples", rf(23) * 0.5);
   bi("forehead", rf(25) * 0.5);
   // one or two head shapes, leaning square for strong jaws
-  const shapes = ["square", "round", "oval", "rectangular", "invertedtriangular"];
-  w[`head_${shapes[hf % shapes.length]}`] = 0.5;
-  w.head_square = (w.head_square ?? 0) + Math.max(0, fc(face.jaw)) * 0.7;
+  const shapes = ["square", "oval", "rectangular"];
+  w[`head_${shapes[hf % shapes.length]}`] = 0.45;
+  w.head_square = (w.head_square ?? 0) + Math.max(0, fc(face.jaw)) * 0.6;
   return w;
 }
 
@@ -289,18 +291,19 @@ export function sculptWrestler(base: HumanBase, a: Appearance, id: string, age =
     { t: 0.95, phi: -1.2, st: 0.06, sp: 0.5, a: m * 0.018 + b * 0.005 },
     { t: 0.92, phi: Math.PI, st: 0.07, sp: 0.9, a: m * 0.012 },
   ];
+  // MakeHuman's morphs carry the build; this only adds a wrestler's extra upper-body mass (V-taper, not a barrel)
   const torsoKx = curve([
-    [0, 1.0 + 0.04 * b],
-    [0.3, 1.0 + 0.04 * m + 0.06 * b],
-    [0.7, 1.02 + 0.1 * m + 0.06 * b],
-    [0.92, 1.02 + 0.08 * m + 0.05 * b],
-    [1, 1.0 + 0.1 * m],
+    [0, 1.0 + 0.02 * b],
+    [0.3, 1.0 + 0.02 * b],
+    [0.7, 1.01 + 0.06 * m + 0.03 * b],
+    [0.92, 1.01 + 0.07 * m + 0.03 * b],
+    [1, 1.0 + 0.08 * m],
   ]);
   const torsoKz = curve([
-    [0, 1.0 + 0.04 * b],
-    [0.3, 1.0 + 0.03 * m + 0.05 * b],
-    [0.7, 1.02 + 0.1 * m + 0.05 * b],
-    [1, 1.0 + 0.08 * m],
+    [0, 1.0 + 0.02 * b],
+    [0.3, 1.0 + 0.02 * b],
+    [0.7, 1.01 + 0.04 * m + 0.02 * b],
+    [1, 1.0 + 0.05 * m],
   ]);
   const armShape = (side: 1 | -1) => (t: number, phi: number) => ({
     kx: 1,
@@ -334,9 +337,9 @@ export function sculptWrestler(base: HumanBase, a: Appearance, id: string, age =
     kx: 1,
     kz: 1,
     k: curve([
-      [0, 1.02 + 0.08 * m * legK + 0.06 * b],
-      [0.45, 1.03 + 0.12 * m * legK + 0.06 * b],
-      [1, 1.02 + 0.05 * m + 0.03 * b],
+      [0, 1.0 + 0.02 * b],
+      [0.45, 1.01 + 0.05 * m * legK + 0.03 * b],
+      [1, 1.01 + 0.03 * m + 0.02 * b],
     ])(t),
     bump: bumpField(
       [
@@ -400,7 +403,7 @@ export function sculptWrestler(base: HumanBase, a: Appearance, id: string, age =
   const outfit = a.outfit;
   const fullLegs = outfit === "tights" || outfit === "pants" || outfit === "bodysuit";
   // bigger heads and hands on bigger bodies so they read at camera distance
-  const headScale = 0.05 + b * 0.04 + m * 0.03;
+  const headScale = 0.012 + b * 0.02 + m * 0.01;
   // wrestler necks: thick, flowing into the traps
   const neckK = 1.1 + 0.32 * m + 0.16 * b + 0.08 * f;
   const headPivot = B("spine004");
@@ -485,7 +488,7 @@ export function sculptWrestler(base: HumanBase, a: Appearance, id: string, age =
     const shinW = segW[9] + segW[10];
     if (outfit === "pants") {
       const legMask = (thighW + shinW) * smooth(0.06, 0.14, vr.y);
-      disp.addScaledVector(nrm, legMask * (0.014 + 0.006 * Math.sin(vr.y * 40 + vr.x * 30)));
+      disp.addScaledVector(nrm, legMask * (0.008 + 0.004 * Math.sin(vr.y * 40 + vr.x * 30)));
     }
     if (fullLegs && outfit !== "pants") disp.addScaledVector(nrm, (thighW + shinW) * 0.0015);
     const ankle = landmarks.ankleY;
@@ -507,6 +510,61 @@ export function sculptWrestler(base: HumanBase, a: Appearance, id: string, age =
     aRegA.set([segW[0], headW, segW[1] + segW[2], segW[3] + segW[4]], i * 4);
     aRegB.set([segW[5] + segW[6], thighW, shinW, Math.max(0, 1 - segW.reduce((s2, x) => s2 + x, 0) - headW)], i * 4);
     aLimb.set([limbIsLeg ? -1 - limbT : limbT, Math.cos(limbPhi), Math.sin(limbPhi), limbSide], i * 4);
+  }
+
+  // ── Boots: smooth the toes and arch into a boot shape (unless barefoot) ──
+  if ((a.bootStyle ?? "boots") !== "barefoot") {
+    const ankle = landmarks.ankleY;
+    const foot: number[] = [];
+    const wgt = new Float32Array(T);
+    for (let t = 0; t < T; t++) {
+      const y = topoRest[t * 3 + 1];
+      if (y < ankle + 0.07 && Math.abs(topoRest[t * 3]) > 0.04) {
+        foot.push(t);
+        wgt[t] = smooth(ankle + 0.07, ankle + 0.01, y);
+      }
+    }
+    const pos = (t: number, c: number) => topoRest[t * 3 + c] + topoDisp[t * 3 + c];
+    const next = new Float32Array(T * 3);
+    for (let it = 0; it < 30; it++) {
+      for (const t of foot) {
+        let sx = 0;
+        let sy = 0;
+        let sz = 0;
+        let cnt = 0;
+        for (let k = base.adjStart[t]; k < base.adjStart[t + 1]; k++) {
+          const nb = base.adj[k];
+          sx += pos(nb, 0);
+          sy += pos(nb, 1);
+          sz += pos(nb, 2);
+          cnt++;
+        }
+        const k = wgt[t] * 0.75;
+        next[t * 3] = pos(t, 0) + (sx / cnt - pos(t, 0)) * k;
+        next[t * 3 + 1] = pos(t, 1) + (sy / cnt - pos(t, 1)) * k;
+        next[t * 3 + 2] = pos(t, 2) + (sz / cnt - pos(t, 2)) * k;
+      }
+      for (const t of foot) {
+        topoDisp[t * 3] = next[t * 3] - topoRest[t * 3];
+        // keep the sole on the floor
+        topoDisp[t * 3 + 1] = Math.max(next[t * 3 + 1], topoRest[t * 3 + 1] < 0.015 ? topoRest[t * 3 + 1] : 0.004) - topoRest[t * 3 + 1];
+        topoDisp[t * 3 + 2] = next[t * 3 + 2] - topoRest[t * 3 + 2];
+      }
+    }
+    // smoothing shrinks; give the boot back its volume
+    for (const t of foot) {
+      const i = base.topoFirst[t];
+      const w2 = wgt[t] * 0.005;
+      topoDisp[t * 3] += base.normals[i * 3] * w2;
+      topoDisp[t * 3 + 2] += base.normals[i * 3 + 2] * w2;
+    }
+    for (let i = 0; i < n; i++) {
+      const t = base.topo[i];
+      if (wgt[t] <= 0) continue;
+      out[i * 3] = topoRest[t * 3] + topoDisp[t * 3];
+      out[i * 3 + 1] = topoRest[t * 3 + 1] + topoDisp[t * 3 + 1];
+      out[i * 3 + 2] = topoRest[t * 3 + 2] + topoDisp[t * 3 + 2];
+    }
   }
 
   // ── Joints follow the skin: each bone moves with the skin around its head ──
@@ -555,6 +613,45 @@ export function sculptWrestler(base: HumanBase, a: Appearance, id: string, age =
   geometry.setAttribute("aLimb", new THREE.BufferAttribute(aLimb, 4));
   geometry.setIndex(new THREE.BufferAttribute(base.index, 1));
   smoothNormals(geometry, base.topo, base.topoCount);
+  // baked occlusion and surface curvature (muscle separations read as shadow, ridges catch light)
+  const nrmA = geometry.getAttribute("normal") as THREE.BufferAttribute;
+  const cavT = new Float32Array(T);
+  for (let t = 0; t < T; t++) {
+    const i = base.topoFirst[t];
+    let sx = 0;
+    let sy = 0;
+    let sz = 0;
+    let el = 0;
+    const cnt = base.adjStart[t + 1] - base.adjStart[t];
+    if (!cnt) continue;
+    for (let k = base.adjStart[t]; k < base.adjStart[t + 1]; k++) {
+      const j = base.topoFirst[base.adj[k]];
+      sx += out[j * 3] - out[i * 3];
+      sy += out[j * 3 + 1] - out[i * 3 + 1];
+      sz += out[j * 3 + 2] - out[i * 3 + 2];
+      el += Math.hypot(out[j * 3] - out[i * 3], out[j * 3 + 1] - out[i * 3 + 1], out[j * 3 + 2] - out[i * 3 + 2]);
+    }
+    // positive = concave (a crease), negative = convex (a bulge)
+    cavT[t] = ((sx * nrmA.getX(i) + sy * nrmA.getY(i) + sz * nrmA.getZ(i)) / cnt) / Math.max(1e-4, el / cnt);
+  }
+  // one smoothing pass so the shading follows muscle groups, not single triangles
+  const cavS = new Float32Array(T);
+  for (let t = 0; t < T; t++) {
+    let s2 = cavT[t] * 2;
+    let c2 = 2;
+    for (let k = base.adjStart[t]; k < base.adjStart[t + 1]; k++) {
+      s2 += cavT[base.adj[k]];
+      c2++;
+    }
+    cavS[t] = s2 / c2;
+  }
+  const aShade = new Float32Array(n * 2);
+  for (let i = 0; i < n; i++) {
+    const t = base.topo[i];
+    aShade[i * 2] = base.ao ? base.ao[t] : 1;
+    aShade[i * 2 + 1] = cavS[t];
+  }
+  geometry.setAttribute("aShade", new THREE.BufferAttribute(aShade, 2));
   geometry.computeBoundingSphere();
   geometry.boundingSphere!.radius *= 1.6;
   return { geometry, boneShift, landmarks, face, topoDisp };

@@ -7,7 +7,7 @@ import { overall } from "./rating";
 import { clamp, createRng, type Rng } from "./rng";
 import { isChampion, sideName, wrestler } from "./queries";
 import { nextId } from "./ids";
-import type { Rivalry, RivalryPayoff, RivalryStage, SegmentResult, Universe } from "./types";
+import type { Rivalry, RivalryPayoff, RivalryStage, RivalryTheme, SegmentResult, Stipulation, Universe } from "./types";
 
 type EventKind = "match-win" | "match-loss" | "draw" | "talk" | "title-change" | "upset" | "decay";
 
@@ -40,6 +40,11 @@ function narrate(rng: Rng, rivalry: Rivalry, kind: EventKind, vars: Record<strin
   const options = pool.map((t) => t.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? k));
   const fresh = options.filter((o) => !recent.has(o));
   return rng.pick(fresh.length ? fresh : options);
+}
+
+/** Story theme, inferred for rivalries saved before themes existed. */
+export function rivalryTheme(r: Pick<Rivalry, "theme" | "titleId">): RivalryTheme {
+  return r.theme ?? (r.titleId ? "title-pursuit" : "personal");
 }
 
 export function sideOf(rivalry: Rivalry, ids: string[]): "A" | "B" | null {
@@ -75,7 +80,9 @@ export function progressRivalry(universe: Universe, rivalry: Rivalry, result: Se
     }
     if (rivalry.stage < 3) rivalry.stage = (rivalry.stage + (isPle ? 2 : 1) > 3 ? 3 : rivalry.stage + (isPle ? 2 : 1)) as RivalryStage;
   } else {
-    rivalry.events.push({ week: universe.week, text: narrate(rng, rivalry, "talk", { a, b }) });
+    const quote = result.dialogue?.find((l) => l.speakerId);
+    const said = quote ? ` ${universe.wrestlers[quote.speakerId!]?.ringName}: "${quote.text}"` : "";
+    rivalry.events.push({ week: universe.week, text: narrate(rng, rivalry, "talk", { a, b }) + said });
     rivalry.intensity = clamp(rivalry.intensity + 8 + qualityBoost);
     rivalry.fanInterest = clamp(rivalry.fanInterest + qualityBoost + 3);
     if (rivalry.stage < 2) rivalry.stage = (rivalry.stage + 1) as RivalryStage;
@@ -100,7 +107,7 @@ export function decayRivalries(universe: Universe) {
 
 export function createRivalry(
   universe: Universe,
-  input: { sideA: string[]; sideB: string[]; payoff: RivalryPayoff; titleId: string | null; origin: string; intensity?: number },
+  input: { sideA: string[]; sideB: string[]; payoff: RivalryPayoff; titleId: string | null; origin: string; intensity?: number; theme?: RivalryTheme; stipulation?: Stipulation },
 ): Rivalry {
   const brandOf = wrestler(universe, input.sideA[0]).brand;
   const rivalry: Rivalry = {
@@ -120,6 +127,8 @@ export function createRivalry(
     bWins: 0,
     events: [{ week: universe.week, text: input.origin }],
     origin: input.origin,
+    theme: input.theme ?? (input.titleId ? "title-pursuit" : "personal"),
+    stipulation: input.stipulation,
   };
   universe.rivalries[rivalry.id] = rivalry;
   return rivalry;
@@ -149,6 +158,7 @@ export function reactToResult(universe: Universe, result: SegmentResult) {
         titleId: title.id,
         origin: `${sideName(universe, prev)} invoked a rematch for the ${title.shortName} title.`,
         intensity: 45,
+        theme: "revenge",
       });
     }
   }
@@ -161,6 +171,7 @@ export function reactToResult(universe: Universe, result: SegmentResult) {
       titleId: null,
       origin: `${sideName(universe, result.winnerIds)} stunned ${sideName(universe, result.loserIds)}, who now wants revenge.`,
       intensity: 38,
+      theme: "jealousy",
     });
   }
 }
@@ -170,7 +181,7 @@ export interface StorySuggestion {
   title: string;
   description: string;
   action:
-    | { type: "create-rivalry"; sideA: string[]; sideB: string[]; payoff: RivalryPayoff; titleId: string | null; origin: string }
+    | { type: "create-rivalry"; sideA: string[]; sideB: string[]; payoff: RivalryPayoff; titleId: string | null; origin: string; theme?: RivalryTheme }
     | { type: "turn"; wrestlerId: string; to: "face" | "heel" }
     | { type: "split-team"; teamId: string };
 }
@@ -224,7 +235,7 @@ export function storySuggestions(universe: Universe): StorySuggestion[] {
   for (const r of risers) {
     const opp = Object.values(universe.wrestlers).find((o) => o.brand === r.brand && o.division === r.division && o.alignment !== r.alignment && !busy.has(o.id) && o.id !== r.id && Math.abs(overall(o, s) - overall(r, s)) <= 5);
     if (!opp) continue;
-    out.push({ id: `riser-${r.id}`, title: `Build ${r.ringName} with a program`, description: `${r.ringName} is hot (momentum ${Math.round(r.momentum)}). ${opp.ringName} is a well-matched opponent.`, action: { type: "create-rivalry", sideA: [r.id], sideB: [opp.id], payoff: "grudge-match", titleId: null, origin: `${opp.ringName} took exception to ${r.ringName}'s rise.` } });
+    out.push({ id: `riser-${r.id}`, title: `Build ${r.ringName} with a program`, description: `${r.ringName} is hot (momentum ${Math.round(r.momentum)}). ${opp.ringName} is a well-matched opponent.`, action: { type: "create-rivalry", sideA: [r.id], sideB: [opp.id], payoff: "grudge-match", titleId: null, origin: `${opp.ringName} took exception to ${r.ringName}'s rise.`, theme: Math.abs(opp.age - r.age) >= 10 ? "legacy" : "jealousy" } });
   }
   return out.slice(0, 10);
 }

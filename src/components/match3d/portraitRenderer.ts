@@ -7,6 +7,7 @@
 import * as THREE from "three";
 import type { Wrestler } from "@/engine/types";
 import { loadHumanAssets } from "./human/assets";
+import { roomEnvironment } from "./Environment";
 import { NEUTRAL } from "./poses";
 import { build } from "./WrestlerModel";
 
@@ -35,7 +36,8 @@ function getRenderer() {
     canvas.width = W;
     canvas.height = H;
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true, alpha: false });
-    renderer.setPixelRatio(1);
+    // rendered at twice the display size: sharper, and fine hair antialiases instead of sparkling
+    renderer.setPixelRatio(2);
     renderer.setSize(W, H, false);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -70,8 +72,10 @@ async function renderOne(w: Wrestler): Promise<string | null> {
   const scene = new THREE.Scene();
   const bg = backdrop(BRAND_BG[w.brand]);
   scene.background = bg;
-  scene.add(new THREE.HemisphereLight("#dfe6ff", "#1a1012", 0.7));
-  const key = new THREE.DirectionalLight("#fff1e0", 3.2);
+  scene.environment = roomEnvironment(r);
+  scene.environmentIntensity = 0.22;
+  scene.add(new THREE.HemisphereLight("#dfe6ff", "#1a1012", 0.45));
+  const key = new THREE.DirectionalLight("#fff1e0", 2.1);
   key.position.set(1.2, 2.6, 2.2);
   scene.add(key);
   const rim1 = new THREE.PointLight(BRAND_BG[w.brand][1], 9, 6);
@@ -91,8 +95,8 @@ async function renderOne(w: Wrestler): Promise<string | null> {
   scene.updateMatrixWorld(true);
 
   const camera = new THREE.PerspectiveCamera(22, W / H, 0.1, 20);
-  camera.position.set(0.32 * s, 1.68 * s, 1.75 * s);
-  camera.lookAt(0, 1.6 * s, 0);
+  camera.position.set(0.26 * s, 1.7 * s, 1.38 * s);
+  camera.lookAt(0, 1.63 * s, 0);
   r.render(scene, camera);
   const url = r.domElement.toDataURL("image/webp", 0.88);
   model.dispose();

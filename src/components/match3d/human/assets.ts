@@ -68,6 +68,16 @@ export function loadHumanAssets(): Promise<HumanAssets> {
         }
       }),
     );
+    // baked ambient occlusion (one byte per topology vertex); optional
+    try {
+      const r = await fetch("/models/human_ao.bin");
+      if (r.ok) {
+        const bytes = new Uint8Array(await r.arrayBuffer());
+        if (bytes.length === base.topoCount) base.ao = Float32Array.from(bytes, (b) => b / 255);
+      }
+    } catch {
+      /* falls back to no baked occlusion */
+    }
     return { base, tex, mean };
   });
   return pending;
