@@ -18,15 +18,14 @@ from CHECKPOINT.md", and it will pick up at **Next up** below.
 
 ## Key decisions
 
-- **Original IP only.** The brief asked for WWE branding and real wrestlers. The game instead ships an
-  original promotion (Apex Wrestling Alliance, brands *Monday Mayhem* / *Friday Fury*) and 69 fictional
-  wrestlers. Players can add anyone they like through the roster editor, custom-wrestler creator,
-  portrait upload and save import.
+- **Personal-use project.** Ships the real WWE / AEW / Legends men's roster and show branding (the owner
+  plays it privately). Roster lives in `src/data/roster-source.ts` → `npm run roster`.
 - **Local-first.** The whole universe is one versioned JSON document stored in IndexedDB (`src/lib/persistence.ts`).
   Supabase is optional cloud backup of that same document.
 - **Engine is pure TypeScript** in `src/engine/` with no React imports, so it is unit-testable and runs headless.
 - **All randomness is seeded** (`src/engine/rng.ts`); results replay identically for a given save.
-- **No external assets.** Portraits are procedural SVG, 3D models are built from Three.js primitives, fonts are self-hosted.
+- **3D assets.** One CC0 MakeHuman body (`public/models/human.bin`) + baked AO (`human_ao.bin`); portraits are
+  rendered from the 3D model. Heavy tools (Blender) are installed only temporarily and removed afterwards.
 
 ## Map of the code
 
@@ -39,6 +38,7 @@ from CHECKPOINT.md", and it will pick up at **Next up** below.
 | Match / segment simulation | `src/engine/simulation.ts` |
 | Booking validation + AI Booker | `src/engine/booking.ts` |
 | Storylines | `src/engine/storyline.ts` |
+| Promo dialogue | `src/engine/dialogue.ts` |
 | Finances | `src/engine/finance.ts` |
 | Weekly loop, contracts, roster ops | `src/engine/universe.ts` |
 | Calendar | `src/engine/calendar.ts` |
@@ -122,11 +122,15 @@ from CHECKPOINT.md", and it will pick up at **Next up** below.
 - Final verification against the production build: typecheck, lint, 39 unit tests, 7 e2e tests, every route
   rendered without errors, WebGL-disabled fallback playable.
 
+## Since then
+See `CHANGELOG.md` (real roster, MakeHuman wrestlers, ragdolls, engine v2, look pass 2, rivalry themes and
+dialogue) and `docs/ROADMAP.md` (Wrestling Empire-style phases).
+
 ## Next up (resume here)
-The brief is complete. Good candidates for a next round:
+Follow `docs/ROADMAP.md` (Phase 2 leftovers, then Phase 3 weapons/hardcore). Older ideas:
 1. Playable tag-team matches (tag in/out, partner AI on the apron) — engine currently handles 1v1.
 2. Entrance sequences per wrestler (walk down the ramp, themed lighting) before the bell.
 3. More moves per wrestler (move-set editor: pick animations for signatures/finisher).
 4. Draft/PLE presentation polish: event posters, a weekly news digest page.
 
-Tests: 39 passing (rating 8, save/migration 4, physiques 2, simulation 6, booking 9, finance/universe/contracts 10).
+Tests: 45 passing (`npm test`).
